@@ -3,4 +3,7 @@ parameters:
     paths:
         - src
         - config
+        - tests
     tmpDir: build/phpstan
+    configDirectories:
+        - %currentWorkingDirectory%/config

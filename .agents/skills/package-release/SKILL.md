@@ -16,9 +16,10 @@ Prepare a safe package release checklist and implementation without tagging, pus
 
 1. Review `CHANGELOG.md`, generated release notes config, GitHub release workflows, open diff, and pending package changes.
 2. Validate the release state with `composer test` before recommending a release.
-3. Confirm whether version metadata needs to change; many Laravel packages rely on Git tags rather than a hardcoded package version.
-4. Review tag naming, release branch, and GitHub release workflow behavior before any release command.
-5. Do not tag, push, or publish without explicit user approval.
+3. Confirm whether version metadata needs to change; `Filoquent::VERSION` owns the source version and the package uses Git tags for Composer releases. A development version is not a published release.
+4. Regenerate the README with `php vendor/bin/maintainer readme:update --no-interaction` after changing `readmeHead()`.
+5. Review tag naming, release branch, and GitHub release workflow behavior before any release command.
+6. Do not tag, push, or publish without explicit user approval.
 
 ## References
 

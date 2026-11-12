@@ -1,0 +1,17 @@
+{
+    "schemaVersion": 1,
+    "version": "1.0.6",
+    "sha256": "95cdff3b7dc6c2b9e972ae7bb5a81cb816df8a259f7b45a6ee2fe73f595c6e57",
+    "files": {
+        ".ai/skills/atb-documentation/SKILL.md": "f139005e4411a1d44af35fc24711fcb10258acc9844b9d3b9bc7e2f0045bd5d5",
+        ".agents/skills/atb-documentation/SKILL.md": "f139005e4411a1d44af35fc24711fcb10258acc9844b9d3b9bc7e2f0045bd5d5",
+        ".ai/skills/atb-documentation/references/page-patterns.md": "c47e0e9943b9e04e9b85767c066d481646f3f9d8460d2aba333fcdfe32036ba2",
+        ".agents/skills/atb-documentation/references/page-patterns.md": "c47e0e9943b9e04e9b85767c066d481646f3f9d8460d2aba333fcdfe32036ba2",
+        ".ai/skills/atb-documentation/references/writing.md": "7cf79e3e62ad2a627d69b96811902882bad63f5b4735a41fd6fea7b471770237",
+        ".agents/skills/atb-documentation/references/writing.md": "7cf79e3e62ad2a627d69b96811902882bad63f5b4735a41fd6fea7b471770237",
+        ".ai/skills/atb-package-development/SKILL.md": "234011c5799d5753ef05b783d6199b84b42039765c56713130364252ab127666",
+        ".agents/skills/atb-package-development/SKILL.md": "234011c5799d5753ef05b783d6199b84b42039765c56713130364252ab127666",
+        ".ai/sync.mjs": "f6793baa2ca9339dba573a0b76b660b855c1fc4bcedf21147f94f3397b6595dd",
+        ".ai/manifest.json": "0fca6025eb99df645d64d2580a487678f2e9883d1df2e3139783d74688e516fa"
+    }
+}

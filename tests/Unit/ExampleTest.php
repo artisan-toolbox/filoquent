@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
-it('is true', function () {
-    expect(true)->toBeTrue();
+use ArtisanToolbox\Filoquent\Filoquent;
+
+it('exposes a semantic source version', function () {
+    expect(Filoquent::VERSION)->toMatch('/^\d+\.\d+\.\d+(?:-(?:alpha|beta)\.\d+)?$/');
 });

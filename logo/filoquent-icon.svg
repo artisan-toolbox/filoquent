@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Filoquent icon</title>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#20252B"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="13.25" fill="none" stroke="#FFFFFF" stroke-opacity=".16" stroke-width="1.5"/>
+  <path d="M17 12h14l10 10v27H17a3 3 0 0 1-3-3V15a3 3 0 0 1 3-3Z" fill="#FFF7EF"/>
+  <path d="M31 12v10h10Z" fill="#FF9A86"/>
+  <path d="M21 29h13M21 36h8" fill="none" stroke="#FF5947" stroke-width="3" stroke-linecap="round"/>
+  <path d="m42 34 9 8-9 8" fill="none" stroke="#FF5947" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="42" cy="34" r="4" fill="#FF5947" stroke="#20252B" stroke-width="1.5"/>
+  <circle cx="51" cy="42" r="4" fill="#FF9A86" stroke="#20252B" stroke-width="1.5"/>
+  <circle cx="42" cy="50" r="4" fill="#FF5947" stroke="#20252B" stroke-width="1.5"/>
+</svg>

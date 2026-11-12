@@ -1,60 +1,41 @@
-<div align="center">
+<!-- MAINTAINER:README_HEAD:START -->
+<div id="maintainer-title" align="center">
+    <img src="logo/filoquent-icon.svg" alt="" width="88">
     <h1>Filoquent</h1>
 </div>
 
-<p align="center">
-    <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/v/artisan-toolbox/filoquent.svg?style=flat-square" alt="Packagist"></a>
-    <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/php-v/artisan-toolbox/filoquent.svg?style=flat-square" alt="PHP from Packagist"></a>
-    <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://badge.laravel.cloud/badge/artisan-toolbox/filoquent?style=flat" alt="Laravel versions"></a>
-    <a href="https://github.com/artisan-toolbox/filoquent/actions"><img alt="GitHub Workflow Status (1.x)" src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=1.x&label=Tests&style=flat-square"></a>
-    <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/dt/artisan-toolbox/filoquent.svg?style=flat-square" alt="Total Downloads"></a>
+<p id="maintainer-badges" align="center">
+<a href="https://atb.dev.br/packages/filoquent/"><img src="https://img.shields.io/badge/Status-Preview-FF5947?style=flat-square" alt="Preview"></a>
+<a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/PHP-%5E8.5-777BB4?style=flat-square" alt="PHP"></a>
+<a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square" alt="Laravel"></a>
+<a href="https://github.com/artisan-toolbox/filoquent/actions/workflows/tests.yml?query=branch%3A1.x"><img src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=1.x&amp;label=Tests&amp;style=flat-square" alt="Tests"></a>
+<a href="https://atb.dev.br/packages/filoquent/"><img src="https://img.shields.io/badge/Docs-Read-blue?style=flat-square" alt="Docs"></a>
 </p>
 
-Filoquent connects Laravel's filesystem to Eloquent models, so you can store files and link them directly to model attributes.
+<p id="maintainer-description" align="center">
+    Preview foundations for connecting Laravel filesystem files to Eloquent models.
+</p>
+<!-- MAINTAINER:README_HEAD:END -->
 
-## Installation
+Filoquent is an early preview for connecting Laravel's filesystem to Eloquent models. The current package provides service registration and configuration publishing. File attributes, uploads, and model synchronization are not implemented.
 
-You can install the package via Composer:
-
-```bash
-composer require artisan-toolbox/filoquent
-```
-
-You may publish all of the package's resources at once:
+Requires PHP ^8.5 and Laravel 13. There is no stable release. With a reviewed development checkout at `packages/filoquent` in your Laravel application, run:
 
 ```bash
-php artisan vendor:publish --tag="filoquent"
+composer config repositories.filoquent path packages/filoquent
+composer require artisan-toolbox/filoquent:1.x-dev
 ```
 
-Or, you may publish each resource individually:
+Verify registration in a Laravel route or command:
 
-### Publishing the Configuration File
+```php
+use ArtisanToolbox\Filoquent\Filoquent;
 
-```bash
-php artisan vendor:publish --tag="filoquent-config"
+$filoquent = app(Filoquent::class);
+
+dump($filoquent === app(Filoquent::class));
 ```
 
-## Usage
+The dump is `true`: the container returns the same instance on both calls. This check does not store a file.
 
-<!-- Add a basic usage example here. -->
-
-## Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Thank you for considering contributing to Filoquent! Please review our [contributing guide](.github/CONTRIBUTING.md) to get started.
-
-## Security Vulnerabilities
-
-Please review [our security policy](.github/SECURITY.md) on how to report security vulnerabilities.
-
-## Credits
-
-- [Allan Mariucci Carvalho](https://github.com/artisan-toolbox)
-- [All Contributors](../../contributors)
-
-## License
-
-Filoquent is open-sourced software licensed under the [MIT license](LICENSE.md).
+Read the [documentation](https://atb.dev.br/packages/filoquent/), [contributing guide](.github/CONTRIBUTING.md), [security policy](.github/SECURITY.md), [changelog](CHANGELOG.md), and [MIT license](LICENSE.md).

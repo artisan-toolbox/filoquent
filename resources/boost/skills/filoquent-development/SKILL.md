@@ -1,41 +1,50 @@
 ---
 name: filoquent-development
-description: >
-  Configure and apply the Filoquent package in Laravel applications.
+description: Install or inspect the Filoquent preview in a Laravel application, verify service registration, and publish its configuration. Use for Filoquent-specific adoption requests; file attributes and Eloquent file synchronization are not implemented in this preview.
 license: MIT
 metadata:
   author: Allan Mariucci Carvalho
 ---
 
-# Filoquent
+# Use the Filoquent preview
 
-Use this skill when a Laravel application needs to integrate the Filoquent package.
+Inspect `composer show artisan-toolbox/filoquent` and the installed public API before choosing an example. This preview requires PHP ^8.5 and Laravel 13 components. It registers `Filoquent` as a singleton and supports configuration publishing. It does not yet upload files, cast model attributes, define file relationships, or synchronize filesystem changes.
 
-## Primary Goal
+## Install the development source
 
-- apply the `artisan-toolbox/filoquent` package's public API in the smallest correct way
+Use a reviewed development checkout at `packages/filoquent` inside the consuming Laravel application. Run from that application's root:
 
-## Workflow
+```bash
+composer config repositories.filoquent path packages/filoquent
+composer require artisan-toolbox/filoquent:1.x-dev
+```
 
-### 1. Inspect the Laravel app context
+Keep the source checkout out of the application's Git history. The `1.x-dev` branch and `Filoquent::VERSION` value `0.1.0-alpha.1` identify development source, not a stable release. No frontend installation is needed. Laravel discovers the provider automatically unless package discovery is disabled.
 
-- confirm the app is a Laravel project
-- inspect the target code paths where the package should be applied
+## Verify registration
 
-### 2. Apply the package's public API
+Run inside a Laravel route or command:
 
-Document how to integrate Filoquent here, replacing this placeholder with the integration steps for your package.
+```php
+use ArtisanToolbox\Filoquent\Filoquent;
 
-## Rules, References, and Templates
+$filoquent = app(Filoquent::class);
 
-Read before executing:
+dump($filoquent === app(Filoquent::class));
+```
 
-- no additional resource files for this skill
+The dump is `true` because both calls return the same instance. This verifies registration without writing a file or querying a database.
 
-## Examples
+## Publish optional configuration
 
-- describe a representative integration scenario for Filoquent
+From the application root, run:
 
-## Anti-patterns
+```bash
+php artisan vendor:publish --tag=filoquent-config
+```
 
-- do not document package internals here; keep the skill focused on adoption in Laravel apps
+The command creates `config/filoquent.php`. The `filoquent` tag publishes the same file. Its only current key, `placeholder`, defaults to `default` and has no filesystem behavior. No configuration is required for the registration check. Do not invent disk, upload, attribute, or model APIs from the package's intended purpose.
+
+If resolution fails, inspect Composer installation and Laravel package discovery. When discovery is disabled, register `ArtisanToolbox\Filoquent\FiloquentServiceProvider` in `bootstrap/providers.php`.
+
+See the [preview overview](https://atb.dev.br/packages/filoquent/), [installation guide](https://atb.dev.br/packages/filoquent/installation/), and [configuration reference](https://atb.dev.br/packages/filoquent/configuration/).
