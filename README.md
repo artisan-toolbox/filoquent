@@ -6,7 +6,7 @@
     <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/v/artisan-toolbox/filoquent.svg?style=flat-square" alt="Packagist"></a>
     <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/php-v/artisan-toolbox/filoquent.svg?style=flat-square" alt="PHP from Packagist"></a>
     <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://badge.laravel.cloud/badge/artisan-toolbox/filoquent?style=flat" alt="Laravel versions"></a>
-    <a href="https://github.com/artisan-toolbox/filoquent/actions"><img alt="GitHub Workflow Status (main)" src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=main&label=Tests&style=flat-square"></a>
+    <a href="https://github.com/artisan-toolbox/filoquent/actions"><img alt="GitHub Workflow Status (1.x)" src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=1.x&label=Tests&style=flat-square"></a>
     <a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/packagist/dt/artisan-toolbox/filoquent.svg?style=flat-square" alt="Total Downloads"></a>
 </p>
 
