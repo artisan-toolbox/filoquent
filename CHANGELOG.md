@@ -1,16 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `filoquent:status` displays a Laravel-style two-column overview of filesystem access, effective private Redis connection parameters and health, scoped journal backlog, and current upload ledger counts. It supports `--connection`, preserves stored data, omits credentials and adapter exception text, and returns a nonzero exit code for unavailable checks.
+
+### Documentation
+
+- Align installation, configuration upgrade guidance, and consumer skill instructions with the published `1.0.0-beta.2` release.
+
 ## [1.0.0-beta.2] - 2026-11-13
-
-### Features
-
-- **Add filoquent:make-middleware generator command** (`e1bd1f7`)
-  Introduces a new Artisan generator command, `php artisan filoquent:make-middleware {name} {--force}`, implemented by `src/Console/Commands/MakeMiddlewareCommand.php`. The command generates a Filoquent upload middleware class using a new PHP stub template (`resources/stubs/middleware.stub`), labels generated types as “Filoquent middleware”, and defaults the namespace to `<rootNamespace>\Files`. The generated middleware contains a `handle(Upload $file)` method that delegates to `$file->asset()` and returns either a `PendingAsset` or a non-empty list, depending on what the upload resolves to. This matters because it standardizes middleware creation for the upload pipeline and aligns developer workflow with Laravel generator conventions; users must run the command to create the class, and `--force` controls overwriting behavior.
-
-- **Add native File attributes and persisted state enums** (`3604688`)
-  Includes the changes introduced by commit 3604688: feat: add native File attributes and persisted state enums.
-
-## [1.0.0-beta.2] - Unreleased
 
 ### Added
 
@@ -20,7 +20,7 @@
 
 ### Changed
 
-- Prepare source identity `1.0.0-beta.2` while keeping published installation examples pinned to `1.0.0-beta.1` until release. Document the native attribute alternative and its precedence in the central guides and consumer skill.
+- Publish source identity `1.0.0-beta.2`. The central guides and consumer skill document the native attribute alternative and its precedence.
 
 ## [1.0.0-beta.1] - 2026-11-13
 
@@ -73,7 +73,9 @@ Compatibility / migration notes:
 
 # Release notes
 
-## Unreleased
+## Historical development notes
+
+These notes record development before `1.0.0-beta.2` was published. Preview labels and version references below describe that earlier source state. Use the versioned entries above and the current installation guides for release guidance.
 
 ### Added
 
@@ -144,4 +146,4 @@ Compatibility / migration notes:
 
 - Remove `filoquent:move-subpath` from the unreleased preview. Paths are chosen at upload creation, and saved manifests and ownership receipts keep existing files trackable after model, field, or configuration changes. Remove any scheduled invocations of this command. Existing files and metadata need no migration.
 
-The source version is `1.0.0-beta.2`, prepared for release. The `1.x` branch is a development branch, not a published stable release.
+Version `1.0.0-beta.2` is the published beta. The `1.x` branch remains a development branch and alone does not establish that a newer version has been published.

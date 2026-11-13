@@ -126,13 +126,17 @@ final class CommandRun
     private function context(?int $exit): array
     {
         $after = $this->command->hasOption('after') ? $this->command->option('after') : null;
-        $limit = $this->command->option('limit');
+        $limit = $this->command->hasOption('limit') ? $this->command->option('limit') : null;
         $requestedConnection = $this->command->option('connection');
 
         return [
             'run_id' => $this->id,
             'command' => $this->command->getName(),
-            'mode' => $this->command->getName() === 'filoquent:health' ? 'health' : ($this->command->option('apply') ? 'apply' : 'preview'),
+            'mode' => match ($this->command->getName()) {
+                'filoquent:health' => 'health',
+                'filoquent:status' => 'status',
+                default => $this->command->option('apply') ? 'apply' : 'preview',
+            },
             'requested_connection' => $this->connectionLabel($requestedConnection),
             'connection' => $this->connectionLabel($this->connection),
             'limit' => $limit === null ? null : (filter_var($limit, FILTER_VALIDATE_INT) === false ? 'invalid' : (int) $limit),

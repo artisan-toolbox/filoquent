@@ -22,6 +22,22 @@ class RedisUploadJournal
         return config('filoquent.redis.database') !== null;
     }
 
+    public function ping(): void
+    {
+        $reply = $this->client()->ping();
+
+        throw_unless($reply === true || in_array((string) $reply, ['PONG', '+PONG'], true), FiloquentException::class, 'The Redis upload journal did not respond to its connection probe.');
+    }
+
+    public function count(string $scope): int
+    {
+        $count = $this->client()->zcard($this->index($scope));
+
+        throw_unless(is_int($count) && $count >= 0, FiloquentException::class, 'Unable to count Redis upload intents.');
+
+        return $count;
+    }
+
     public function record(UploadIntent $intent): void
     {
         try {

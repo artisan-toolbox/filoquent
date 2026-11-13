@@ -1,6 +1,6 @@
 ---
 name: filoquent-development
-description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, generating Filoquent upload middleware with Artisan, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
+description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, generating Filoquent upload middleware with Artisan, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, inspecting operational status, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
 license: MIT
 metadata:
   author: Allan Mariucci Carvalho
@@ -8,14 +8,14 @@ metadata:
 
 # Use Filoquent file attributes
 
-Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.1`; this source prepares `1.0.0-beta.2`. Native PHP `File` attributes and persisted-state enums described below require beta 2 source and remain unpublished until its release. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
+Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.2`, which includes native PHP `File` attributes, persisted-state enums, and the upload middleware generator described below. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
 
 ## Install and prepare
 
 Start in an existing Laravel 13 application with a database and writable Laravel filesystem. Run from the application root:
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-beta.1
+composer require artisan-toolbox/filoquent:1.0.0-beta.2
 php artisan migrate
 ```
 
@@ -60,7 +60,7 @@ The dump is `true`. Assignment snapshots the source locally. Saving publishes by
 
 ### Declare files with native PHP attributes
 
-In beta 2 source, native class attributes are an alternative to entries in `casts()`:
+Native class attributes are an alternative to entries in `casts()`:
 
 ```php
 use ArtisanToolbox\Filoquent\Attributes\File;
@@ -86,7 +86,7 @@ Explicit `$casts` entries, `casts()` entries, and runtime `mergeCasts()` overrid
 
 Publish optional configuration with `php artisan vendor:publish --tag=filoquent-config`. `filoquent.filesystem` selects a Laravel disk or uses Laravel's default when null. `filoquent.base_path` defaults to `assets`. Configure S3-compatible adapters through Laravel, not a second Filoquent storage client.
 
-Development source exposes every configuration value through environment variables. Inspect the installed `config/filoquent.php` before relying on these mappings. In an earlier release, publish the file and add the corresponding `env()` calls described in the [configuration reference](https://atb.dev.br/packages/filoquent/configuration/#environment).
+Beta 2 exposes every configuration value through environment variables. When upgrading with an existing published `config/filoquent.php`, compare it with the installed package configuration and add any missing `env()` mappings from the [configuration reference](https://atb.dev.br/packages/filoquent/configuration/#environment).
 
 | Environment variable | Default | Purpose |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ Development source exposes every configuration value through environment variabl
 | `FILOQUENT_REDIS_DB` | `null` | Reserved Redis logical database. Null disables recovery; zero is valid. |
 | `FILOQUENT_REDIS_CONNECTION` | `default` | Existing Laravel Redis connection used as the journal base. |
 
-`FILOQUENT_REDIS_DB` already exists in earlier releases. New mappings for the other settings require the updated configuration. After editing `.env`, rebuild any configuration cache with `php artisan config:cache` and restart long-running workers. Keep `env()` calls inside configuration files. Existing application configuration overrides package defaults. Development source removes the unused `placeholder` option; remove it from older published configuration files too. Existing files keep their recorded disk and path.
+`FILOQUENT_REDIS_DB` already exists in earlier releases. New mappings for the other settings require the updated configuration. After editing `.env`, rebuild any configuration cache with `php artisan config:cache` and restart long-running workers. Keep `env()` calls inside configuration files. Existing application configuration overrides package defaults. Beta 2 has no `placeholder` option. Remove that unused option from older published configuration files too. Existing files keep their recorded disk and path.
 
 Import `ArtisanToolbox\Filoquent\Enums\FileNaming`. Use `AsFile::using(naming: FileNaming::Original)`, `AsFile::using(name: 'document')`, or `AsFile::using(middleware: DocumentVariants::class)`. Names omit extensions. `FileNaming::Uuid` is the default. The `naming` argument accepts only these enum cases, not raw strings. Invalid serialized cast policies fail when Laravel resolves the cast. Existing asset metadata needs no migration. Content MIME supplies the extension unless trusted middleware overrides it. The model directory is always the SHA1 of its FQN plus `::` plus the attribute name when an upload is created. It cannot be customized. That hash is not used for reading, integrity checks, replacement, or deletion. Every field upload has a separate UUIDv7 directory.
 
@@ -103,7 +103,7 @@ A populated attribute returns immutable `Assets`; null stays null. Use `default(
 
 ### Generate upload middleware
 
-The generator requires development source containing `filoquent:make-middleware`; do not assume it exists in the published beta. Check `php artisan list filoquent` in the consuming application first. From that application's root, run:
+Beta 2 includes `filoquent:make-middleware`. From the application root, run:
 
 ```bash
 php artisan filoquent:make-middleware NamedOriginal
@@ -121,7 +121,7 @@ protected function casts(): array
 }
 ```
 
-Alternatively, set `middleware: NamedOriginal::class` on a native `File` attribute in source that supports it. `Images/NamedOriginal` creates `app/Files/Images/NamedOriginal.php`; a fully qualified application class name selects its own namespace. Existing files remain unchanged unless you supply `--force`. Laravel's generator reports existing files and reserved short class names without writing them. Its console exit status alone does not identify these refusals. Generation does not run uploads, migrations, or storage operations.
+Alternatively, set `middleware: NamedOriginal::class` on a native `File` attribute. `Images/NamedOriginal` creates `app/Files/Images/NamedOriginal.php`; a fully qualified application class name selects its own namespace. Existing files remain unchanged unless you supply `--force`. Laravel's generator reports existing files and reserved short class names without writing them. Its console exit status alone does not identify these refusals. Generation does not run uploads, migrations, or storage operations.
 
 Extend `ArtisanToolbox\Filoquent\Middleware` and implement `handle(Upload $file): PendingAsset|array` when creating a class manually. Return `$file->asset()` for the original and `PendingAsset::fromPath(...)` for locally generated variants. The input exposes `path`, `name`, `extension`, `mime`, and `size`. The service container resolves middleware. Middleware owns temporary generated sources and must keep them readable until storage completes. Output names override cast naming. Require unique keys and physical names and exactly one default. Supply an actual image library to generate image bytes; changing an extension performs no conversion. Keep irreversible external side effects out of middleware. See the [middleware guide](https://atb.dev.br/docs/filoquent/middleware).
 
@@ -138,6 +138,10 @@ Preview `php artisan filoquent:prune --limit=100`. Apply with `--apply` after re
 Preview `php artisan filoquent:gc --limit=100` to reconcile committed active receipts after manual row deletion or removed JSON columns. Apply with `--apply`. First confirmed absence marks a candidate; a second absence at least 24 hours later permits retirement. Every applied batch rotates indexed `checked_at` values, so repeated bounded runs progress without a reset cursor. Exact manifests in renamed columns preserve files. Soft-deleted rows remain live. Missing tables, missing primary keys, or partial/malformed references are unresolved and preserved. Run with full writer visibility across tenants and pause during schema migrations/restores. No model/field hash is used for collection. A storage object without either a SQL receipt or a Redis upload intent cannot be discovered by this command.
 
 ## Check files and schedule maintenance
+
+`filoquent:status` is an unreleased addition after `1.0.0-beta.2`. Check `php artisan list filoquent` before recommending it for an installed release. From the application root, run `php artisan filoquent:status` after migrating the selected ledger. Use `--connection=uploads` for another configured SQL writer. Its two-column report shows filesystem configuration and a read probe, local root permissions, private Redis client/server/database parameters and connection health, scoped journal intents, and current upload counts by state. Remote write permissions are not tested. Disabled Redis is not resolved.
+
+Status counts upload generations, including their variants, rather than individual physical files or a lifetime total. `Pending recovery` counts SQL intents awaiting reconciliation and their cleanup grace period. `Awaiting deletion` counts committed retired receipts. Redis intents can overlap SQL receipts, so do not add these totals. Status neither lists storage nor changes owners, receipts, journal entries, or files. Exit codes are 0 for successful checks, 1 for unavailable checks or reporting failures, and 2 for invalid connection options. Unavailable counts remain unknown. It uses maintenance start/completion logging, including under `--silent`, and always reports partial coverage because it does not audit existing file references. See [operational status](https://atb.dev.br/packages/filoquent/health/#status).
 
 Run `php artisan filoquent:health` from the application root after migrating the owning database. It checks all active upload receipts up to the highest starting UUID. It verifies every variant using the saved filesystem and path, including soft-deleted owners and exact manifests preserved after model or field renames. It reads physical owner rows without hydrating model classes. It does not change owners, upload ledger fields, files, or Redis. An unresolved built-in local disk needs an existing root directory, including local parents of composite disks. A missing root is inconclusive and is not created. Already resolved disks remain usable. Custom disk factories must avoid initialization side effects. Imported JSON without a committed receipt remains outside its coverage.
 

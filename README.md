@@ -19,10 +19,10 @@
 
 Filoquent connects Laravel filesystems to Eloquent attributes. Assign an uploaded file, local path, or stream, then save the model. Middleware can produce named variants. An indexed ownership ledger coordinates replacement and permanent deletion.
 
-Requires PHP ^8.5 and Laravel 13. Version `1.0.0-beta.1` is the published beta. This checkout prepares `1.0.0-beta.2`. APIs may change before the stable release. From your Laravel application's root, install the published version from [Packagist](https://packagist.org/packages/artisan-toolbox/filoquent):
+Requires PHP ^8.5 and Laravel 13. Version `1.0.0-beta.2` is the published beta. APIs may change before the stable release. From your Laravel application's root, install the published version from [Packagist](https://packagist.org/packages/artisan-toolbox/filoquent):
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-beta.1
+composer require artisan-toolbox/filoquent:1.0.0-beta.2
 php artisan migrate
 ```
 

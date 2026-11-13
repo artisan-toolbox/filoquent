@@ -9,6 +9,7 @@ use ArtisanToolbox\Filoquent\Console\Commands\HealthCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\MakeMiddlewareCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\PruneCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\ResolvePendingCommand;
+use ArtisanToolbox\Filoquent\Console\Commands\StatusCommand;
 use ArtisanToolbox\Filoquent\Support\RedisUploadJournal;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
@@ -45,6 +46,6 @@ class FiloquentServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'filoquent-migrations');
 
-        $this->commands([PruneCommand::class, GarbageCollectCommand::class, HealthCommand::class, ResolvePendingCommand::class, MakeMiddlewareCommand::class]);
+        $this->commands([PruneCommand::class, GarbageCollectCommand::class, HealthCommand::class, ResolvePendingCommand::class, StatusCommand::class, MakeMiddlewareCommand::class]);
     }
 }

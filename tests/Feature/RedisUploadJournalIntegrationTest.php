@@ -67,6 +67,35 @@ afterEach(function (): void {
     $connection->del($index);
 });
 
+it('reports the private journal connection and counts only the selected ledger intents read only', function (): void {
+    config(['database.redis.default.database' => 1]);
+    $shared = integrationJournalRedis();
+    $shared->set('status-shared-marker', 'application database');
+
+    try {
+        DB::beginTransaction();
+        JournalDocument::query()->create(['attachment' => __FILE__]);
+        DB::rollBack();
+        $journal = resolve(RedisUploadJournal::class);
+        $scope = UploadLedger::scope(DB::connection());
+        $before = $journal->due($scope, 100);
+        $files = Storage::disk('local')->allFiles();
+        $journal->ping();
+
+        expect($journal->count($scope))->toBe(1)
+            ->and($journal->count((string) Str::uuid()))->toBe(0)
+            ->and(Artisan::call('filoquent:status'))->toBe(0)
+            ->and(Artisan::output())->toContain('Connected', 'Journal intents')
+            ->and($journal->due($scope, 100))->toBe($before)
+            ->and(Storage::disk('local')->allFiles())->toBe($files)
+            ->and(DB::table('filoquent_uploads')->count())->toBe(0)
+            ->and($shared->get('status-shared-marker'))->toBe('application database');
+    } finally {
+        $shared->del('status-shared-marker');
+        $shared->select(2);
+    }
+})->group('redis');
+
 it('uses atomic duplicate rejection exact acknowledgments and nonresurrecting retries', function (): void {
     DB::beginTransaction();
     JournalDocument::query()->create(['attachment' => __FILE__]);
