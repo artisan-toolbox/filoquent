@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.0.0-beta.3] - 2026-11-13
+
+### Features
+
+- **Add filoquent:status command and document release status** (`184e3a6`)
+  Introduces a new Artisan command, `filoquent:status`, and updates documentation to reflect the 1.0.0-beta.2 release status/versioning context for beta users.
+
+Functional additions (user impact):
+- Adds `php artisan filoquent:status` to report the current Filoquent version and operational health across:
+  - Filesystem accessibility via `filoquent.filesystem` / `filoquent.base_path`.
+  - Database upload ledger health from the `filoquent_uploads` table, including per-state upload counts. The `--connection` option selects the writer connection used for reading ledger data.
+  - Redis upload journal availability, including a Redis connectivity probe and journal intent counts (scoped via SQL journal scope for the selected DB connection).
+- The command is read-only: it does not modify stored data, files, the database ledger table, or Redis journal contents.
+- Exit codes and reliability: the command returns `SUCCESS` only when all relevant checks (filesystem, ledger, and Redis journal) succeed; otherwise it returns `FAILURE`. When checks are unavailable it emits issue keys like `status_filesystem_unavailable`, `status_ledger_unavailable`, `status_journal_unavailable`, and `status_journal_count_unavailable`, along with suggested remediation actions.
+- Adds supporting implementation details and behavior changes required by the command:
+  - Registers the command in `FiloquentServiceProvider`.
+  - Enhances `CommandRun::context()` so mode metadata is correctly set for `filoquent:status` and so `limit` is only set when `--limit` is explicitly provided (prevents unintended mode/limit side effects for status reporting and downstream logic keyed off context).
+  - Extends `RedisUploadJournal` with `ping()` (Redis connectivity verification) and `count(scope)` (journal intent cardinality via `zcard`) with strict validation.
+
+Testing coverage (why it matters):
+- Adds integration coverage ensuring the command:
+  - Uses the private Redis journal connection and counts only intents for the selected ledger scope.
+  - Does not mutate local storage files, does not add rows to `filoquent_uploads`, does not leak Redis marker state, and keeps transactional behavior stable.
+- Adds a dedicated `StatusCommandTest` suite verifying output structure/fields, non-mutation guarantees, graceful handling when storage backends or ledger rows are unavailable, credential non-disclosure in Redis reporting, correct `--connection` behavior (including rejection of invalid names), `--silent` behavior, and remote storage accessibility via read probes.
+
+Documentation and compatibility/migration notes:
+- Updates `AGENTS.md` and `CHANGELOG.md` restructuring to document this capability under Added and to clarify beta/source identity. Wording is adjusted so the beta source explicitly references `1.0.0-beta.2` (and distinguishes pre-`1.0.0-beta.2` historical development).
+- Updates `README.md` and skill docs to target `1.0.0-beta.2` instead of `1.0.0-beta.1`.
+- Updates `resources/boost/skills/filoquent-development/SKILL.md` to document `filoquent:status`, including discovery (`php artisan list filoquent`), required migration context, `--connection=uploads` usage, what the report includes/excludes, how to interpret counts, and operational expectations (including that credentials and adapter exception text are omitted).
+
+Compatibility considerations:
+- API-level compatibility is not stated as changed beyond the `filoquent:status` addition and the internal context-mode/limit handling used by the command. Users should primarily expect a new read-only diagnostic capability.
+- Install/upgrade guidance is updated to reference beta `1.0.0-beta.2`, and this release’s documentation emphasizes that beta artifacts may still change before stable release.
+
 ## Unreleased
 
 ### Added
