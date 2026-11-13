@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.0-beta.2] - 2026-11-13
+
+### Features
+
+- **Add filoquent:make-middleware generator command** (`e1bd1f7`)
+  Introduces a new Artisan generator command, `php artisan filoquent:make-middleware {name} {--force}`, implemented by `src/Console/Commands/MakeMiddlewareCommand.php`. The command generates a Filoquent upload middleware class using a new PHP stub template (`resources/stubs/middleware.stub`), labels generated types as “Filoquent middleware”, and defaults the namespace to `<rootNamespace>\Files`. The generated middleware contains a `handle(Upload $file)` method that delegates to `$file->asset()` and returns either a `PendingAsset` or a non-empty list, depending on what the upload resolves to. This matters because it standardizes middleware creation for the upload pipeline and aligns developer workflow with Laravel generator conventions; users must run the command to create the class, and `--force` controls overwriting behavior.
+
+- **Add native File attributes and persisted state enums** (`3604688`)
+  Includes the changes introduced by commit 3604688: feat: add native File attributes and persisted state enums.
+
 ## [1.0.0-beta.2] - Unreleased
 
 ### Added
