@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ArtisanToolbox\Filoquent\Console\Commands;
 
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use ArtisanToolbox\Filoquent\Support\CommandRun;
 use ArtisanToolbox\Filoquent\Support\UploadLedger;
 use Illuminate\Console\Attributes\Description;
@@ -51,7 +52,7 @@ final class PruneCommand extends Command
         }
 
         $ids = $connection->table('filoquent_uploads')->useWritePdo()
-            ->where('state', 'retired')
+            ->where('state', UploadState::Retired->value)
             ->when($after, fn (Builder $query): Builder => $query->where('id', '>', $after))
             ->orderBy('id')->limit($limit)->pluck('id');
         $failures = 0;

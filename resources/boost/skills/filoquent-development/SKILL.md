@@ -1,6 +1,6 @@
 ---
 name: filoquent-development
-description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, configuring file naming or middleware variants, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
+description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
 license: MIT
 metadata:
   author: Allan Mariucci Carvalho
@@ -8,14 +8,14 @@ metadata:
 
 # Use Filoquent file attributes
 
-Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. Version `1.0.0-alpha.1` is published on Packagist. Filoquent is in beta, and APIs may change before the stable release. Never assume the APIs below exist in an older installed scaffold.
+Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.1`; this source prepares `1.0.0-beta.2`. Native PHP `File` attributes and persisted-state enums described below require beta 2 source and remain unpublished until its release. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
 
 ## Install and prepare
 
 Start in an existing Laravel 13 application with a database and writable Laravel filesystem. Run from the application root:
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-alpha.1
+composer require artisan-toolbox/filoquent:1.0.0-beta.1
 php artisan migrate
 ```
 
@@ -58,7 +58,44 @@ The dump is `true`. Assignment snapshots the source locally. Saving publishes by
 
 ## Configure and consume
 
+### Declare files with native PHP attributes
+
+In beta 2 source, native class attributes are an alternative to entries in `casts()`:
+
+```php
+use ArtisanToolbox\Filoquent\Attributes\File;
+use ArtisanToolbox\Filoquent\Concerns\HasFiloquent;
+use ArtisanToolbox\Filoquent\Enums\FileNaming;
+use Illuminate\Database\Eloquent\Model;
+
+#[File('attachment', naming: FileNaming::Original)]
+#[File('cover', name: 'Cover')]
+class Document extends Model
+{
+    use HasFiloquent;
+}
+```
+
+Create nullable `$table->filoquent('attachment')` and `$table->filoquent('cover')` columns before saving this model. Assigning and saving `attachment` preserves its sanitized original filename. The default naming policy is `FileNaming::Uuid`. The optional `name` and `middleware` arguments follow `AsFile::using()` behavior; middleware must extend `ArtisanToolbox\Filoquent\Middleware`. Defining metadata does not instantiate middleware, resolve Redis, or publish files.
+
+Keep `HasFiloquent` on the model. Attributes belong above the class, not on PHP properties that would shadow Eloquent fields. A column name starts with a letter or underscore and contains at most 64 letters, digits, or underscores. Repeat `File` for different fields. Duplicate fields within one class throw `FiloquentException`. Declarations are inherited, and a child declaration for the same field replaces its parent's declaration.
+
+Explicit `$casts` entries, `casts()` entries, and runtime `mergeCasts()` overrides take priority over metadata for the same field. Existing `AsFile::class` and `AsFile::using()` declarations remain supported. Configure each field through one declaration when possible. Existing saved manifests keep their paths after metadata changes. See [native attributes](https://atb.dev.br/packages/filoquent/configuration/#native-attributes).
+
+### Configure storage and naming
+
 Publish optional configuration with `php artisan vendor:publish --tag=filoquent-config`. `filoquent.filesystem` selects a Laravel disk or uses Laravel's default when null. `filoquent.base_path` defaults to `assets`. Configure S3-compatible adapters through Laravel, not a second Filoquent storage client.
+
+Development source exposes every configuration value through environment variables. Inspect the installed `config/filoquent.php` before relying on these mappings. In an earlier release, publish the file and add the corresponding `env()` calls described in the [configuration reference](https://atb.dev.br/packages/filoquent/configuration/#environment).
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `FILOQUENT_FILESYSTEM` | `null` | Laravel disk name. Null uses the application's default disk. |
+| `FILOQUENT_BASE_PATH` | `assets` | Relative directory for new uploads. |
+| `FILOQUENT_REDIS_DB` | `null` | Reserved Redis logical database. Null disables recovery; zero is valid. |
+| `FILOQUENT_REDIS_CONNECTION` | `default` | Existing Laravel Redis connection used as the journal base. |
+
+`FILOQUENT_REDIS_DB` already exists in earlier releases. New mappings for the other settings require the updated configuration. After editing `.env`, rebuild any configuration cache with `php artisan config:cache` and restart long-running workers. Keep `env()` calls inside configuration files. Existing application configuration overrides package defaults. Development source removes the unused `placeholder` option; remove it from older published configuration files too. Existing files keep their recorded disk and path.
 
 Import `ArtisanToolbox\Filoquent\Enums\FileNaming`. Use `AsFile::using(naming: FileNaming::Original)`, `AsFile::using(name: 'document')`, or `AsFile::using(middleware: DocumentVariants::class)`. Names omit extensions. `FileNaming::Uuid` is the default. The `naming` argument accepts only these enum cases, not raw strings. Invalid serialized cast policies fail when Laravel resolves the cast. Existing asset metadata needs no migration. Content MIME supplies the extension unless trusted middleware overrides it. The model directory is always the SHA1 of its FQN plus `::` plus the attribute name when an upload is created. It cannot be customized. That hash is not used for reading, integrity checks, replacement, or deletion. Every field upload has a separate UUIDv7 directory.
 

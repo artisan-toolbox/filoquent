@@ -6,6 +6,7 @@ namespace ArtisanToolbox\Filoquent\Support;
 
 use ArtisanToolbox\Filoquent\Assets;
 use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Connection;
@@ -34,7 +35,7 @@ final class UploadLedger
 
         $connection->table('filoquent_uploads')->insert([
             ...$intent->receipt(),
-            'state' => 'writing',
+            'state' => UploadState::Writing->value,
             'checked_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
         ]);
     }
@@ -42,11 +43,11 @@ final class UploadLedger
     public static function confirm(Model $model, UploadIntent $intent): void
     {
         $connection = $model->getConnection();
-        $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $intent->id)->where('state', 'writing');
+        $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $intent->id)->where('state', UploadState::Writing->value);
         $receipt = $query->lockForUpdate()->first();
 
         throw_if($connection->transactionLevel() === 0 || $receipt === null || ! $intent->matches($receipt)
-            || Persistence::ownerKey($model) === null || $query->update(['state' => 'active', 'owner_key' => (string) Persistence::ownerKey($model)]) !== 1, FiloquentException::class, 'The upload writing reservation is missing or changed.');
+            || Persistence::ownerKey($model) === null || $query->update(['state' => UploadState::Active->value, 'owner_key' => (string) Persistence::ownerKey($model)]) !== 1, FiloquentException::class, 'The upload writing reservation is missing or changed.');
     }
 
     public static function committed(Connection $connection, UploadIntent $intent): bool
@@ -56,10 +57,10 @@ final class UploadLedger
         }
 
         $receipt = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $intent->id)
-            ->whereIn('state', ['active', 'pending', 'retired'])->first();
+            ->whereIn('state', [UploadState::Active->value, UploadState::Pending->value, UploadState::Retired->value])->first();
 
         return $receipt !== null && $intent->matches($receipt)
-            && ($receipt->state !== 'active' || $receipt->owner_key !== null);
+            && ($receipt->state !== UploadState::Active->value || $receipt->owner_key !== null);
     }
 
     public static function promote(Connection $connection, UploadIntent $intent): void
@@ -71,7 +72,7 @@ final class UploadLedger
                 $now = CarbonImmutable::now('UTC');
                 $connection->table('filoquent_uploads')->insert([
                     ...$intent->receipt(),
-                    'state' => 'pending',
+                    'state' => UploadState::Pending->value,
                     'checked_at' => $now->addHours(Reconciler::GRACE_HOURS)->format('Y-m-d H:i:s.u'),
                     'orphaned_at' => $now->format('Y-m-d H:i:s.u'),
                 ]);
@@ -87,7 +88,7 @@ final class UploadLedger
         throw_if($connection->transactionLevel() !== 0, FiloquentException::class, 'Pending upload cleanup must run outside a database transaction.');
 
         $retired = $connection->transaction(static function () use ($connection, $id): bool {
-            $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $id)->where('state', 'pending');
+            $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $id)->where('state', UploadState::Pending->value);
             $receipt = $query->lockForUpdate()->first();
             $now = CarbonImmutable::now('UTC');
 
@@ -109,7 +110,7 @@ final class UploadLedger
                 $receipt->owner_key_name, $receipt->owner_key, $receipt->attribute,
                 AsFile::decode($receipt->manifest) ?? throw new FiloquentException('The pending upload has no manifest.'));
 
-            return $query->update(['state' => 'retired']) === 1;
+            return $query->update(['state' => UploadState::Retired->value]) === 1;
         });
 
         return ! $retired || self::drain($connection, $id);
@@ -129,7 +130,7 @@ final class UploadLedger
             'owner_key' => (string) Persistence::ownerKey($model),
             'attribute' => $attribute,
             'manifest' => json_encode($assets, JSON_THROW_ON_ERROR),
-            'state' => 'active',
+            'state' => UploadState::Active->value,
             'checked_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
         ]);
     }
@@ -142,7 +143,7 @@ final class UploadLedger
             return null;
         }
 
-        $query = $model->getConnection()->table('filoquent_uploads')->where('id', $id)->where('state', 'active');
+        $query = $model->getConnection()->table('filoquent_uploads')->where('id', $id)->where('state', UploadState::Active->value);
         $receipt = $query->lockForUpdate()->first();
 
         if ($receipt === null
@@ -152,7 +153,7 @@ final class UploadLedger
             return null;
         }
 
-        $query->update(['state' => 'retired']);
+        $query->update(['state' => UploadState::Retired->value]);
 
         return $id;
     }
@@ -164,7 +165,7 @@ final class UploadLedger
         }
 
         try {
-            $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $id)->where('state', 'retired');
+            $query = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $id)->where('state', UploadState::Retired->value);
             $receipt = $query->first();
 
             if ($receipt === null) {

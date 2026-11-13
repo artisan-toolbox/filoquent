@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ArtisanToolbox\Filoquent\Console\Commands;
 
+use ArtisanToolbox\Filoquent\Enums\OwnerTableState;
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
 use ArtisanToolbox\Filoquent\Support\CommandRun;
 use ArtisanToolbox\Filoquent\Support\OwnerTables;
@@ -127,9 +129,9 @@ final class GarbageCollectCommand extends Command
     /** @return Collection<int, Receipt> */
     private function candidates(Connection $connection, int $limit, bool $apply): Collection
     {
-        $uploads = $connection->table('filoquent_uploads')->useWritePdo()->where('state', 'active');
+        $uploads = $connection->table('filoquent_uploads')->useWritePdo()->where('state', UploadState::Active->value);
 
-        if (! $connection->table('filoquent_owner_tables')->useWritePdo()->where('state', 'pending')->exists()) {
+        if (! $connection->table('filoquent_owner_tables')->useWritePdo()->where('state', OwnerTableState::Pending->value)->exists()) {
             /** @var Collection<int, Receipt> $receipts */
             $receipts = $uploads->oldest('checked_at')->orderBy('id')->limit($limit)->get();
 
@@ -159,7 +161,7 @@ final class GarbageCollectCommand extends Command
         $select = static function (bool $lock) use ($connection, $limit): Collection {
             $namespace = $connection->table('filoquent_upload_namespace')->useWritePdo()->where('id', 1);
             $after = ($lock ? (clone $namespace)->lockForUpdate() : $namespace)->value('gc_after_table');
-            $ready = $connection->table('filoquent_owner_tables')->useWritePdo()->where('state', 'ready');
+            $ready = $connection->table('filoquent_owner_tables')->useWritePdo()->where('state', OwnerTableState::Ready->value);
             $routes = (clone $ready)->when($after !== null, fn (Builder $query): Builder => $query->where('owner_table', '>', $after))
                 ->orderBy('owner_table')->limit($limit)->get(['owner_table']);
 
@@ -232,7 +234,7 @@ final class GarbageCollectCommand extends Command
     private function pending(Connection $connection, int $limit, bool $apply, CommandRun $run): int
     {
         $now = CarbonImmutable::now('UTC');
-        $receipts = $connection->table('filoquent_uploads')->useWritePdo()->where('state', 'pending')
+        $receipts = $connection->table('filoquent_uploads')->useWritePdo()->where('state', UploadState::Pending->value)
             ->where('checked_at', '<=', $now->format('Y-m-d H:i:s.u'))
             ->oldest('checked_at')->orderBy('id')->limit($limit)->get();
         $failures = 0;
@@ -249,7 +251,7 @@ final class GarbageCollectCommand extends Command
                 $this->error($receipt->id.' pending unresolved. '.$exception->getMessage());
 
                 if ($apply) {
-                    $connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', 'pending')
+                    $connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', UploadState::Pending->value)
                         ->where('checked_at', $receipt->checked_at)
                         ->update(['checked_at' => $now->addSeconds(60)->format('Y-m-d H:i:s.u')]);
                 }

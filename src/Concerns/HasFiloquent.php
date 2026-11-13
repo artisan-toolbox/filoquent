@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ArtisanToolbox\Filoquent\Concerns;
 
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
+use ArtisanToolbox\Filoquent\Support\FileAttributes;
 use ArtisanToolbox\Filoquent\Support\OperationCancelled;
 use ArtisanToolbox\Filoquent\Support\OwnerTables;
 use ArtisanToolbox\Filoquent\Support\PendingUpload;
@@ -22,6 +23,11 @@ use Throwable;
 trait HasFiloquent
 {
     private ?Persistence $filoquentOperation = null;
+
+    protected function initializeHasFiloquent(): void
+    {
+        $this->mergeCasts(array_diff_key(FileAttributes::casts(static::class), $this->getCasts()));
+    }
 
     /** @param array<string, mixed> $options */
     public function save(array $options = []): bool

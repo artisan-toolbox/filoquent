@@ -21,15 +21,15 @@ it('registers cleanup commands without a path relocation command', function (): 
 });
 
 it('merges the package config', function () {
-    expect(config('filoquent.placeholder'))->toBe('default');
+    expect(config('filoquent.base_path'))->toBe('assets');
 });
 
 it('preserves application configuration overrides', function () {
-    config(['filoquent.placeholder' => 'application-value']);
+    config(['filoquent.base_path' => 'application-assets']);
 
     (new FiloquentServiceProvider(app()))->register();
 
-    expect(config('filoquent.placeholder'))->toBe('application-value');
+    expect(config('filoquent.base_path'))->toBe('application-assets');
 });
 
 it('publishes the optional configuration without replacing application settings', function (string $tag) {
@@ -40,15 +40,15 @@ it('publishes the optional configuration without replacing application settings'
 
     try {
         expect(Artisan::call('vendor:publish', ['--tag' => $tag]))->toBe(0);
-        expect(require $directory.'/filoquent.php')->toMatchArray([
-            'placeholder' => 'default',
+        expect(require $directory.'/filoquent.php')->toBe([
             'filesystem' => null,
             'base_path' => 'assets',
+            'redis' => ['database' => null, 'connection' => 'default'],
         ]);
-        file_put_contents($directory.'/filoquent.php', "<?php return ['placeholder' => 'application-value'];");
+        file_put_contents($directory.'/filoquent.php', "<?php return ['base_path' => 'application-assets'];");
 
         expect(Artisan::call('vendor:publish', ['--tag' => $tag]))->toBe(0);
-        expect(require $directory.'/filoquent.php')->toBe(['placeholder' => 'application-value']);
+        expect(require $directory.'/filoquent.php')->toBe(['base_path' => 'application-assets']);
     } finally {
         File::delete($directory.'/filoquent.php');
         rmdir($directory);

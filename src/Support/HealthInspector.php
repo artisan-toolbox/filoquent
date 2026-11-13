@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ArtisanToolbox\Filoquent\Support;
 
 use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use Closure;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
@@ -140,7 +141,7 @@ final readonly class HealthInspector
 
     private function active(): Builder
     {
-        return $this->connection->table('filoquent_uploads')->useWritePdo()->where('state', 'active');
+        return $this->connection->table('filoquent_uploads')->useWritePdo()->where('state', UploadState::Active->value);
     }
 
     private function range(CommandRun $run): Builder

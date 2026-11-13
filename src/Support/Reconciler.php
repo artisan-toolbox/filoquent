@@ -6,6 +6,7 @@ namespace ArtisanToolbox\Filoquent\Support;
 
 use ArtisanToolbox\Filoquent\Assets;
 use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Connection;
@@ -59,7 +60,7 @@ final class Reconciler
             $result = $this->connection->transaction(function () use ($receipt, $assets): array {
                 (new OwnerTables($this->connection))->guard($receipt->owner_table);
                 $owner = $this->owner($receipt, true);
-                $query = $this->connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', 'active');
+                $query = $this->connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', UploadState::Active->value);
                 /** @var Receipt|null $current */
                 $current = $query->lockForUpdate()->first();
 
@@ -78,7 +79,7 @@ final class Reconciler
 
                     if ($current->orphaned_at !== null && CarbonImmutable::parse($current->orphaned_at, 'UTC')->addHours(self::GRACE_HOURS)->lessThanOrEqualTo($now)) {
                         $this->assertRoute($current, refresh: true);
-                        $values['state'] = 'retired';
+                        $values['state'] = UploadState::Retired->value;
                         $result = ['status' => 'retired', 'message' => 'Absence confirmed after the minimum 24-hour grace period.'];
                     }
                 }
@@ -114,7 +115,7 @@ final class Reconciler
     /** @param Receipt $receipt */
     private function observeUnresolved(object $receipt): void
     {
-        $query = $this->connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', 'active')
+        $query = $this->connection->table('filoquent_uploads')->useWritePdo()->where('id', $receipt->id)->where('state', UploadState::Active->value)
             ->where('checked_at', $receipt->checked_at);
         match ($this->connection->getDriverName()) {
             'pgsql' => $query->whereRaw('CAST("manifest" AS text) = ?', [$receipt->manifest]),
@@ -146,7 +147,7 @@ final class Reconciler
                 $owner = $this->owner($receipt, true);
                 /** @var Receipt|null $current */
                 $current = $this->connection->table('filoquent_uploads')->useWritePdo()
-                    ->where('id', $receipt->id)->where('state', 'active')->lockForUpdate()->first();
+                    ->where('id', $receipt->id)->where('state', UploadState::Active->value)->lockForUpdate()->first();
 
                 if ($current === null || $current->owner_type !== $receipt->owner_type
                     || $current->owner_table !== $receipt->owner_table || $current->owner_key_name !== $receipt->owner_key_name

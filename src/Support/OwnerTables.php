@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace ArtisanToolbox\Filoquent\Support;
 
 use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Enums\OwnerTableResolution;
+use ArtisanToolbox\Filoquent\Enums\OwnerTableState;
+use ArtisanToolbox\Filoquent\Enums\UploadState;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Connection;
@@ -85,7 +88,7 @@ final class OwnerTables
         $this->ensure($table);
         $row = $this->route('filoquent_owner_tables', $table)->sharedLock()->first();
 
-        throw_if($row === null || $row->state !== 'ready', FiloquentException::class, 'The owner table has a pending Filoquent issue. Resolve it with filoquent:resolve-pending before writing this upload group.');
+        throw_if($row === null || $row->state !== OwnerTableState::Ready->value, FiloquentException::class, 'The owner table has a pending Filoquent issue. Resolve it with filoquent:resolve-pending before writing this upload group.');
     }
 
     public function isPending(string $table): bool
@@ -99,7 +102,7 @@ final class OwnerTables
         $table = $this->logical($table);
 
         /** @var OwnerTable|null $row */
-        $row = $this->route('filoquent_owner_tables', $table)->where('state', 'pending')->first();
+        $row = $this->route('filoquent_owner_tables', $table)->where('state', OwnerTableState::Pending->value)->first();
 
         return $row;
     }
@@ -116,15 +119,15 @@ final class OwnerTables
                 $row = $this->route('filoquent_owner_tables', $table)->lockForUpdate()->first();
             }
 
-            if ($row !== null && $row->state === 'pending') {
+            if ($row !== null && $row->state === OwnerTableState::Pending->value) {
                 return;
             }
 
             $this->route('filoquent_owner_tables', $table)->update([
-                'state' => 'pending',
+                'state' => OwnerTableState::Pending->value,
                 'issue_id' => (string) Str::uuid7(),
                 'detected_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
-                'affected_uploads' => $this->route('filoquent_uploads', $table)->where('state', 'active')->count(),
+                'affected_uploads' => $this->route('filoquent_uploads', $table)->where('state', UploadState::Active->value)->count(),
                 'resolved_at' => null,
                 'resolution' => null,
                 'resolved_to' => null,
@@ -168,7 +171,7 @@ final class OwnerTables
         $after = $after === null ? null : $this->logical($after);
 
         /** @var Collection<int, OwnerTable> $rows */
-        $rows = $this->connection->table('filoquent_owner_tables')->useWritePdo()->where('state', 'pending')
+        $rows = $this->connection->table('filoquent_owner_tables')->useWritePdo()->where('state', OwnerTableState::Pending->value)
             ->when($after !== null, fn (Builder $query): Builder => $query->where('owner_table', '>', $after))
             ->orderBy('owner_table')->limit($limit)->get();
 
@@ -185,13 +188,13 @@ final class OwnerTables
             $now = CarbonImmutable::now('UTC');
             $today = $now->startOfDay()->format('Y-m-d H:i:s.u');
             /** @var Collection<int, OwnerTable> $rows */
-            $rows = $this->connection->table('filoquent_owner_tables')->useWritePdo()->where('state', 'pending')
+            $rows = $this->connection->table('filoquent_owner_tables')->useWritePdo()->where('state', OwnerTableState::Pending->value)
                 ->where(fn (Builder $query): Builder => $query->whereNull('last_reported_at')->orWhere('last_reported_at', '<', $today))
                 ->oldest('last_reported_at')->orderBy('owner_table')->limit($limit)->lockForUpdate()->get();
             $claimed = [];
 
             foreach ($rows as $row) {
-                $query = $this->route('filoquent_owner_tables', $row->owner_table)->where('state', 'pending')->where('issue_id', $row->issue_id);
+                $query = $this->route('filoquent_owner_tables', $row->owner_table)->where('state', OwnerTableState::Pending->value)->where('issue_id', $row->issue_id);
                 $row->last_reported_at === null ? $query->whereNull('last_reported_at') : $query->where('last_reported_at', $row->last_reported_at);
 
                 if ($query->update(['last_reported_at' => $now->format('Y-m-d H:i:s.u')]) === 1) {
@@ -223,7 +226,7 @@ final class OwnerTables
 
             $this->assertIssue($locked[$from], $expectedIssueId);
             throw_if($locked[$from]->requires_qualified_rename && ! $qualified, FiloquentException::class, 'Legacy PostgreSQL receipts require an explicit schema-qualified destination.');
-            throw_if($from !== $to && ($locked[$to] === null || $locked[$to]->state !== 'ready'), FiloquentException::class, 'The destination owner table has its own pending issue.');
+            throw_if($from !== $to && ($locked[$to] === null || $locked[$to]->state !== OwnerTableState::Ready->value), FiloquentException::class, 'The destination owner table has its own pending issue.');
             throw_unless($this->exists($to), FiloquentException::class, 'The destination physical owner table does not exist on the selected writer.');
             $key = $this->primaryKey($to);
             $this->validateOwners($from, $to, $key);
@@ -232,13 +235,13 @@ final class OwnerTables
                 'sqlsrv' => 'COALESCE([journal_owner_table], [owner_table])',
                 default => 'COALESCE("journal_owner_table", "owner_table")',
             };
-            $affected = $this->route('filoquent_uploads', $from)->where('state', 'active')->update([
+            $affected = $this->route('filoquent_uploads', $from)->where('state', UploadState::Active->value)->update([
                 'journal_owner_table' => $this->connection->raw($alias),
                 'owner_table' => $to,
                 'orphaned_at' => null,
                 'checked_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
             ]);
-            $this->close($from, 'renamed', $to);
+            $this->close($from, OwnerTableResolution::Renamed, $to);
 
             return $affected;
         });
@@ -259,12 +262,12 @@ final class OwnerTables
                 : $this->exists($from) || $this->viewExists($from);
             throw_if($present, FiloquentException::class, 'The physical owner table or a compatible view still exists. Restore or remap its references instead of authorizing removal.');
             $now = CarbonImmutable::now('UTC');
-            $affected = $this->route('filoquent_uploads', $from)->where('state', 'active')->update([
-                'state' => 'pending',
+            $affected = $this->route('filoquent_uploads', $from)->where('state', UploadState::Active->value)->update([
+                'state' => UploadState::Pending->value,
                 'orphaned_at' => $now->format('Y-m-d H:i:s.u'),
                 'checked_at' => $now->addHours(Reconciler::GRACE_HOURS)->format('Y-m-d H:i:s.u'),
             ]);
-            $this->close($from, 'removed', null);
+            $this->close($from, OwnerTableResolution::Removed, null);
 
             return $affected;
         });
@@ -275,7 +278,7 @@ final class OwnerTables
         $after = null;
 
         do {
-            $receipts = $this->route('filoquent_uploads', $from)->where('state', 'active')
+            $receipts = $this->route('filoquent_uploads', $from)->where('state', UploadState::Active->value)
                 ->when($after !== null, fn (Builder $query): Builder => $query->where('id', '>', $after))
                 ->orderBy('id')->limit(500)->lockForUpdate()->get();
             $keys = [];
@@ -328,15 +331,15 @@ final class OwnerTables
 
     private function assertIssue(?stdClass $row, string $expectedIssueId): void
     {
-        throw_if($row === null || $row->state !== 'pending' || ! is_string($row->issue_id) || ! hash_equals($row->issue_id, $expectedIssueId), FiloquentException::class, 'The pending owner table issue changed. Inspect the current issue before confirming its resolution.');
+        throw_if($row === null || $row->state !== OwnerTableState::Pending->value || ! is_string($row->issue_id) || ! hash_equals($row->issue_id, $expectedIssueId), FiloquentException::class, 'The pending owner table issue changed. Inspect the current issue before confirming its resolution.');
     }
 
-    private function close(string $table, string $resolution, ?string $to): void
+    private function close(string $table, OwnerTableResolution $resolution, ?string $to): void
     {
         $this->route('filoquent_owner_tables', $table)->update([
-            'state' => 'ready',
+            'state' => OwnerTableState::Ready->value,
             'resolved_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
-            'resolution' => $resolution,
+            'resolution' => $resolution->value,
             'requires_qualified_rename' => false,
             'resolved_to' => $to,
         ]);
@@ -345,7 +348,7 @@ final class OwnerTables
     private function ensure(string $table): void
     {
         if (! $this->route('filoquent_owner_tables', $table)->exists()) {
-            $this->connection->table('filoquent_owner_tables')->insertOrIgnore(['owner_table' => $table, 'state' => 'ready', 'affected_uploads' => 0]);
+            $this->connection->table('filoquent_owner_tables')->insertOrIgnore(['owner_table' => $table, 'state' => OwnerTableState::Ready->value, 'affected_uploads' => 0]);
         }
     }
 

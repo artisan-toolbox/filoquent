@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0-beta.2] - Unreleased
+
+### Added
+
+- Optional repeatable native `#[File('attachment', ...)]` attributes on Eloquent model classes using `HasFiloquent`. Attributes register the existing `AsFile` cast and accept the same naming, filename, and middleware options. Explicit casts take priority; children can replace inherited declarations. Duplicate declarations within one class and invalid column names fail before persistence.
+- String-backed `UploadState`, `OwnerTableState`, and `OwnerTableResolution` enums for persisted upload states, owner-table states, and pending-issue resolutions. Runtime SQL reads and writes use their exact existing backing values. Existing rows, manifests, indexes, migrations, cleanup authority, and grace periods remain compatible; no schema migration is needed for this update.
+
+### Changed
+
+- Prepare source identity `1.0.0-beta.2` while keeping published installation examples pinned to `1.0.0-beta.1` until release. Document the native attribute alternative and its precedence in the central guides and consumer skill.
+
 ## [1.0.0-beta.1] - 2026-11-13
 
 ### Maintenance
@@ -55,6 +66,7 @@ Compatibility / migration notes:
 
 ### Added
 
+- Environment variables for the filesystem disk, upload base path, and base Redis connection. All active configuration values now have environment mappings, with Laravel-style comments explaining their purpose and limits.
 - Read-only `filoquent:health` checks for files referenced by active ownership receipts, including variants, historical names, and soft-deleted owners. The default scans the full starting UUID range in bounded batches; optional `--limit`, `--after`, and `--connection` controls report their coverage explicitly.
 - Automatic live health batch progress in supported interactive terminals, plain noninteractive summaries, and cooperative signal interruption with a continuation cursor.
 - Application start and completion logs for health, garbage collection, and prune, independently of console verbosity. Summaries include bounded diagnostics, counters, coverage, duration, and exit status. Start logging failures abort work; completion logging failures return nonzero without repeating applied operations.
@@ -84,6 +96,7 @@ Compatibility / migration notes:
 
 ### Changed
 
+- Remove the unused `placeholder` configuration option. Remove it from previously published configuration files; it had no effect on package behavior. Existing active defaults remain unchanged.
 - Update the README and consumer skill for Beta status and the published `1.0.0-alpha.1` release, with installation from Packagist without a local checkout. Preserve version identifiers for the maintainer to set.
 - Run Rector in the Composer validation suite and every Windows/Linux dependency lane. Keep the declared Laravel 13.0 compatibility and explicit-null disk fallback. Install the official Mockery PHPStan extension and constrain development ParaTest to the compatible 7.27 series.
 - Require PHPStan 2.3.5, Rector 2.8.4 with its Laravel extension 2.7.3, and the Pest type-coverage plugin 5.1 for compatible analysis and PHPUnit 13 type coverage in the lowest dependency lane.
@@ -120,4 +133,4 @@ Compatibility / migration notes:
 
 - Remove `filoquent:move-subpath` from the unreleased preview. Paths are chosen at upload creation, and saved manifests and ownership receipts keep existing files trackable after model, field, or configuration changes. Remove any scheduled invocations of this command. Existing files and metadata need no migration.
 
-The source version is `0.1.0-alpha.1`. The `1.x` branch is a development branch, not a published stable release.
+The source version is `1.0.0-beta.2`, prepared for release. The `1.x` branch is a development branch, not a published stable release.
