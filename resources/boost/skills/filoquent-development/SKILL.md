@@ -1,6 +1,6 @@
 ---
 name: filoquent-development
-description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
+description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, generating Filoquent upload middleware with Artisan, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
 license: MIT
 metadata:
   author: Allan Mariucci Carvalho
@@ -101,7 +101,29 @@ Import `ArtisanToolbox\Filoquent\Enums\FileNaming`. Use `AsFile::using(naming: F
 
 A populated attribute returns immutable `Assets`; null stays null. Use `default()`, `get('thumbnail')`, and `all()`. A missing variant returns null. String conversion returns the default URL. Each `Asset` exposes `filesystem`, `path`, `default`, `url()`, `temporaryUrl()`, `exists()`, and `readStream()`. Close returned streams. Private delivery and temporary URL support depend on the disk adapter. Serializing returns the key-to-metadata map without another DB query or filesystem listing.
 
-Extend `ArtisanToolbox\Filoquent\Middleware` and implement `handle(Upload $file): PendingAsset|array`. Return `$file->asset()` for the original and `PendingAsset::fromPath(...)` for locally generated variants. The input exposes `path`, `name`, `extension`, `mime`, and `size`. The service container resolves middleware. It owns temporary generated sources and must keep them readable until storage completes. Output names override cast naming. Require unique keys and physical names and exactly one default. Supply an actual image library to generate image bytes; changing an extension performs no conversion. Keep irreversible external side effects out of middleware.
+### Generate upload middleware
+
+The generator requires development source containing `filoquent:make-middleware`; do not assume it exists in the published beta. Check `php artisan list filoquent` in the consuming application first. From that application's root, run:
+
+```bash
+php artisan filoquent:make-middleware NamedOriginal
+```
+
+The command creates `app/Files/NamedOriginal.php` in the application's `Files` namespace. Its `handle(Upload $file): PendingAsset|array` method returns `$file->asset()`, so it can store the original upload without editing the generated file. Select it on a model that already uses `HasFiloquent` and has a nullable JSON `attachment` column:
+
+```php
+use App\Files\NamedOriginal;
+use ArtisanToolbox\Filoquent\Casts\AsFile;
+
+protected function casts(): array
+{
+	return ['attachment' => AsFile::using(middleware: NamedOriginal::class)];
+}
+```
+
+Alternatively, set `middleware: NamedOriginal::class` on a native `File` attribute in source that supports it. `Images/NamedOriginal` creates `app/Files/Images/NamedOriginal.php`; a fully qualified application class name selects its own namespace. Existing files remain unchanged unless you supply `--force`. Laravel's generator reports existing files and reserved short class names without writing them. Its console exit status alone does not identify these refusals. Generation does not run uploads, migrations, or storage operations.
+
+Extend `ArtisanToolbox\Filoquent\Middleware` and implement `handle(Upload $file): PendingAsset|array` when creating a class manually. Return `$file->asset()` for the original and `PendingAsset::fromPath(...)` for locally generated variants. The input exposes `path`, `name`, `extension`, `mime`, and `size`. The service container resolves middleware. Middleware owns temporary generated sources and must keep them readable until storage completes. Output names override cast naming. Require unique keys and physical names and exactly one default. Supply an actual image library to generate image bytes; changing an extension performs no conversion. Keep irreversible external side effects out of middleware. See the [middleware guide](https://atb.dev.br/docs/filoquent/middleware).
 
 ## Preserve ownership
 

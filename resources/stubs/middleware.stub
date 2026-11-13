@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use ArtisanToolbox\Filoquent\Middleware;
+use ArtisanToolbox\Filoquent\PendingAsset;
+use ArtisanToolbox\Filoquent\Upload;
+
+final class {{ class }} extends Middleware
+{
+    /** @return PendingAsset|non-empty-list<PendingAsset> */
+    public function handle(Upload $file): PendingAsset|array
+    {
+        return $file->asset();
+    }
+}

@@ -4,6 +4,7 @@
 
 ### Added
 
+- `php artisan filoquent:make-middleware NamedOriginal` generates a ready-to-use upload middleware under the application's `Files` namespace. Nested names and fully qualified application class names use Laravel's generator conventions. Existing files remain unchanged unless `--force` is supplied. The generated middleware returns the original pending asset and can be selected through `AsFile::using(middleware: ...)` or a native `File` attribute.
 - Optional repeatable native `#[File('attachment', ...)]` attributes on Eloquent model classes using `HasFiloquent`. Attributes register the existing `AsFile` cast and accept the same naming, filename, and middleware options. Explicit casts take priority; children can replace inherited declarations. Duplicate declarations within one class and invalid column names fail before persistence.
 - String-backed `UploadState`, `OwnerTableState`, and `OwnerTableResolution` enums for persisted upload states, owner-table states, and pending-issue resolutions. Runtime SQL reads and writes use their exact existing backing values. Existing rows, manifests, indexes, migrations, cleanup authority, and grace periods remain compatible; no schema migration is needed for this update.
 

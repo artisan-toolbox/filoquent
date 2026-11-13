@@ -6,6 +6,7 @@ namespace ArtisanToolbox\Filoquent;
 
 use ArtisanToolbox\Filoquent\Console\Commands\GarbageCollectCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\HealthCommand;
+use ArtisanToolbox\Filoquent\Console\Commands\MakeMiddlewareCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\PruneCommand;
 use ArtisanToolbox\Filoquent\Console\Commands\ResolvePendingCommand;
 use ArtisanToolbox\Filoquent\Support\RedisUploadJournal;
@@ -44,6 +45,6 @@ class FiloquentServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'filoquent-migrations');
 
-        $this->commands([PruneCommand::class, GarbageCollectCommand::class, HealthCommand::class, ResolvePendingCommand::class]);
+        $this->commands([PruneCommand::class, GarbageCollectCommand::class, HealthCommand::class, ResolvePendingCommand::class, MakeMiddlewareCommand::class]);
     }
 }
