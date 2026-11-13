@@ -7,12 +7,11 @@ use ArtisanToolbox\Maintainer\Versionable\Contracts\Versionable;
 use ArtisanToolbox\Maintainer\Versionable\Contracts\WithReadmeHead;
 use ArtisanToolbox\Maintainer\Versionable\Readme\Badge;
 
-it('exposes the preview version and the managed package identity', function () {
+it('exposes the managed package identity', function () {
     $package = new Filoquent;
 
     expect((new ReflectionClass(Filoquent::class))->getInterfaceNames())
-        ->toContain(Versionable::class, WithReadmeHead::class)
-        ->and(Filoquent::VERSION)->toBe('0.1.0-alpha.1');
+        ->toContain(Versionable::class, WithReadmeHead::class);
 
     $head = $package->readmeHead();
 

@@ -51,6 +51,7 @@
 
 ### Fixed
 
+- Allow Maintainer release checks to validate a newly selected source version without a README identity test requiring the previous version number. Keep semantic-version validation in its dedicated test.
 - Run PHPStan with one process on Windows to avoid concurrent Larastan writes to the shared Testbench bootstrap files. Keep full level 7 analysis, both dependency lanes, and default parallelism on other systems.
 - Preserve database-normalized primary keys, including PostgreSQL UUIDs, for immediate replacement and deletion. Reconcile unresolved JSON manifests through engine-compatible comparisons on MySQL and PostgreSQL.
 - Persist schema-qualified PostgreSQL owner routes independently of later search-path changes. Quarantine older unqualified active receipts until a qualified destination proves every manifest, and refuse removal when another relation still occupies the source name.
