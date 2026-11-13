@@ -1,3 +1,31 @@
+# Changelog
+
+## [1.0.0-alpha.1] - 2026-11-13
+
+### Features
+
+- **Expand CI test workflow for SQLite and native DBs** (`923edd1`)
+  Extends the CI test matrix/workflow to cover additional database scenarios, specifically SQLite and native DBs. This improves confidence that the project behaves correctly across common database configurations and catches DB-specific regressions earlier. User impact is mostly for developers and maintainers (more robust validation before merges); end users benefit from higher-quality releases. Compatibility/migration: no changes required for consumers, but contributors should expect longer/more comprehensive CI runs due to added DB coverage.
+
+- **Initial commit** (`d9b518f`)
+  Adds the initial repository implementation. This establishes the baseline project structure and functionality that later documentation/CI fixes build upon. User impact: foundational—everything in later changes depends on this starting point. Compatibility/migration: none applicable beyond beginning from the initial state.
+
+### Fixes
+
+- **Limit phpstan parallelism on Windows with shared platform profile** (`6efafe2`)
+  Adjusts phpstan configuration to limit parallelism on Windows by using a shared platform profile. This prevents platform-specific resource contention or configuration issues that can cause phpstan failures or instability in Windows-based CI runs. User impact is indirect: it improves developer/CI reliability for static analysis without changing production runtime code. Compatibility/migration: none for end users; contributors benefit when running phpstan locally or in Windows CI.
+
+- **Allow maintainer checks to validate new source version** (`7526894`)
+  Includes the changes introduced by commit 7526894: fix: allow maintainer checks to validate new source version.
+
+### Maintenance
+
+- **Add AI and documentation skills standards** (`a021d5c`)
+  Introduces/updates repository standards related to AI/documentation skills, adding documentation skill guidance and related standards content (e.g., skill definition and authoring/review workflows). This matters because it standardizes how documentation and agent skills are written, verified, and kept consistent with actual package/API behavior. User impact is indirect: end users get better documentation consistency over time; maintainers/agents gain clearer process requirements. Compatibility/migration: none for runtime users; contributors/agent workflows may need to follow the new standards files when editing documentation or skill instructions.
+
+- **Use 1.x for Filoquent development workflows** (`77997e2`)
+  Changes the Filoquent development workflow to use the 1.x line. This is typically aimed at aligning dev dependencies/compatibility with the intended major version during development, reducing mismatch risk. User impact is for developers/maintainers working on the project (dependency resolution/compatibility); it may affect test/dev setup behavior but does not describe end-user runtime API changes. Compatibility/migration: developers may need to update local/dev dependency constraints or ensure their environment aligns with the 1.x workflow.
+
 # Release notes
 
 ## Unreleased
