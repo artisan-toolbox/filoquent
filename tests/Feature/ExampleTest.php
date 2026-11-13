@@ -15,6 +15,11 @@ it('returns the same instance from the container', function () {
     expect(resolve(Filoquent::class))->toBe(resolve(Filoquent::class));
 });
 
+it('registers cleanup commands without a path relocation command', function (): void {
+    expect(Artisan::all())->toHaveKeys(['filoquent:prune', 'filoquent:gc'])
+        ->not->toHaveKey('filoquent:move-subpath');
+});
+
 it('merges the package config', function () {
     expect(config('filoquent.placeholder'))->toBe('default');
 });
@@ -35,7 +40,11 @@ it('publishes the optional configuration without replacing application settings'
 
     try {
         expect(Artisan::call('vendor:publish', ['--tag' => $tag]))->toBe(0);
-        expect(require $directory.'/filoquent.php')->toBe(['placeholder' => 'default']);
+        expect(require $directory.'/filoquent.php')->toMatchArray([
+            'placeholder' => 'default',
+            'filesystem' => null,
+            'base_path' => 'assets',
+        ]);
         file_put_contents($directory.'/filoquent.php', "<?php return ['placeholder' => 'application-value'];");
 
         expect(Artisan::call('vendor:publish', ['--tag' => $tag]))->toBe(0);

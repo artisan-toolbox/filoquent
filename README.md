@@ -13,29 +13,49 @@
 </p>
 
 <p id="maintainer-description" align="center">
-    Preview foundations for connecting Laravel filesystem files to Eloquent models.
+    Preview file attributes for Eloquent with upload variants and indexed storage ownership.
 </p>
 <!-- MAINTAINER:README_HEAD:END -->
 
-Filoquent is an early preview for connecting Laravel's filesystem to Eloquent models. The current package provides service registration and configuration publishing. File attributes, uploads, and model synchronization are not implemented.
+Filoquent connects Laravel filesystems to Eloquent attributes. Assign an uploaded file, local path, or stream, then save the model. Middleware can produce named variants. An indexed ownership ledger coordinates replacement and permanent deletion.
 
-Requires PHP ^8.5 and Laravel 13. There is no stable release. With a reviewed development checkout at `packages/filoquent` in your Laravel application, run:
+Requires PHP ^8.5 and Laravel 13. This is an unpublished development preview, not a stable release. With a reviewed checkout at `packages/filoquent` in your Laravel application, run:
 
 ```bash
 composer config repositories.filoquent path packages/filoquent
 composer require artisan-toolbox/filoquent:1.x-dev
+php artisan migrate
 ```
 
-Verify registration in a Laravel route or command:
+Add a nullable JSON column using `$table->filoquent('attachment')->nullable()` and configure its model:
 
 ```php
-use ArtisanToolbox\Filoquent\Filoquent;
+use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Concerns\HasFiloquent;
+use Illuminate\Database\Eloquent\Model;
 
-$filoquent = app(Filoquent::class);
+class Document extends Model
+{
+    use HasFiloquent;
 
-dump($filoquent === app(Filoquent::class));
+    protected function casts(): array
+    {
+        return ['attachment' => AsFile::class];
+    }
+}
+
+$source = storage_path('app/filoquent-example.txt');
+file_put_contents($source, 'Hello Filoquent');
+
+$document = new Document;
+$document->attachment = $source;
+$document->save();
+
+dump($document->attachment->default()->exists());
 ```
 
-The dump is `true`: the container returns the same instance on both calls. This check does not store a file.
+The dump is `true`.
+
+Run the [installation guide](https://atb.dev.br/packages/filoquent/installation/) to create the example table and configure writable storage. File metadata retains its saved disk and path across cast changes. Soft deletes retain files. The garbage collector reconciles committed receipts after manual row or column deletion. Optional Redis recovery tracks interrupted writes. Objects without a SQL receipt or Redis intent remain outside automatic discovery.
 
 Read the [documentation](https://atb.dev.br/packages/filoquent/), [contributing guide](.github/CONTRIBUTING.md), [security policy](.github/SECURITY.md), [changelog](CHANGELOG.md), and [MIT license](LICENSE.md).

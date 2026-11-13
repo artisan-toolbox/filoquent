@@ -6,7 +6,10 @@ use Rector\Config\RectorConfig;
 use Rector\Php74\Rector\Closure\ClosureToArrowFunctionRector;
 use Rector\Php81\Rector\Array_\ArrayToFirstClassCallableRector;
 use Rector\TypeDeclaration\Rector\Closure\AddClosureVoidReturnTypeWhereNoReturnRector;
+use RectorLaravel\Rector\Class_\AddHasFactoryToModelsRector;
+use RectorLaravel\Rector\Class_\WithoutTimestampsPropertyToWithoutTimestampsAttributeRector;
 use RectorLaravel\Rector\ClassMethod\AddGenericReturnTypeToRelationsRector;
+use RectorLaravel\Rector\Coalesce\ApplyDefaultInsteadOfNullCoalesceRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use RectorLaravel\Rector\MethodCall\WhereToWhereLikeRector;
 use RectorLaravel\Set\LaravelSetList;
@@ -32,6 +35,9 @@ return RectorConfig::configure()
         RemoveDumpDataDeadCodeRector::class,
     ])
     ->withSkip([
+        AddHasFactoryToModelsRector::class,
+        ApplyDefaultInsteadOfNullCoalesceRector::class,
+        WithoutTimestampsPropertyToWithoutTimestampsAttributeRector::class,
         ArrayToFirstClassCallableRector::class,
         AddClosureVoidReturnTypeWhereNoReturnRector::class,
         AddGenericReturnTypeToRelationsRector::class,

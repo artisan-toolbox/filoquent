@@ -19,10 +19,19 @@
   "require": {
     "php": "^8.5",
     "artisan-toolbox/maintainer": "^1.10.0",
-    "illuminate/support": "^13.0"
+    "illuminate/console": "^13.0",
+    "illuminate/database": "^13.0",
+    "illuminate/filesystem": "^13.0",
+    "illuminate/http": "^13.0",
+    "illuminate/log": "^13.0",
+    "illuminate/support": "^13.0",
+    "laravel/prompts": "^0.3.25",
+    "symfony/http-foundation": "^7.4 || ^8.0",
+    "symfony/mime": "^7.4 || ^8.0"
   },
   "require-dev": {
-    "driftingly/rector-laravel": "^2.5",
+    "brianium/paratest": "~7.27.5",
+    "driftingly/rector-laravel": "^2.7.3",
     "larastan/larastan": "^3.9",
     "laravel/pao": "^1.0",
     "laravel/pint": "^1.29",
@@ -30,10 +39,11 @@
     "pestphp/pest": "^4.6||^5.0",
     "pestphp/pest-plugin-laravel": "^4.1||^5.0",
     "pestphp/pest-plugin-phpstan": "^5.3",
-    "pestphp/pest-plugin-type-coverage": "^4.0||^5.0",
+    "pestphp/pest-plugin-type-coverage": "^5.1",
     "phpstan/extension-installer": "^1.4",
-    "phpstan/phpstan": "^2.2.8",
-    "rector/rector": "^2.6.2"
+    "phpstan/phpstan-mockery": "^2.0",
+    "phpstan/phpstan": "^2.3.5",
+    "rector/rector": "^2.8.4"
   },
   "autoload": {
     "psr-4": {
@@ -70,17 +80,24 @@
     "lint:check": [
       "vendor/bin/pint --parallel --test"
     ],
+    "refactor": [
+      "vendor/bin/rector process --no-progress-bar"
+    ],
+    "refactor:check": [
+      "vendor/bin/rector process --dry-run --no-progress-bar"
+    ],
     "analyse": [
-      "vendor/bin/phpstan analyse"
+      "vendor/bin/phpstan analyse --memory-limit=512M"
     ],
     "test:types": [
-      "vendor/bin/pest --type-coverage --min=100"
+      "vendor/bin/pest --type-coverage --min=100 --memory-limit=512M --no-cache"
     ],
     "test:unit": [
       "vendor/bin/pest --parallel"
     ],
     "test": [
       "@analyse",
+      "@refactor:check",
       "@lint:check",
       "@test:types",
       "@test:unit"
@@ -104,5 +121,10 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "suggest": {
+    "illuminate/redis": "Required for the optional Redis upload journal (^13.0).",
+    "ext-redis": "Use the phpredis driver for the optional Redis upload journal.",
+    "predis/predis": "Use the predis driver for the optional Redis upload journal."
+  }
 }

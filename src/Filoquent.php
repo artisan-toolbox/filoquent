@@ -18,7 +18,7 @@ class Filoquent implements Versionable, WithReadmeHead
         return (new Head)
             ->withLogo(src: 'logo/filoquent-icon.svg', alt: '', width: 88)
             ->withTitle('Filoquent')
-            ->withDescription('Preview foundations for connecting Laravel filesystem files to Eloquent models.')
+            ->withDescription('Preview file attributes for Eloquent with upload variants and indexed storage ownership.')
             ->addBadge(Badge::make(
                 link: 'https://atb.dev.br/packages/filoquent/',
                 imgSrc: 'https://img.shields.io/badge/Status-Preview-FF5947?style=flat-square',
