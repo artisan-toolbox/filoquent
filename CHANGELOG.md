@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.0.0-beta.1] - 2026-11-13
+
+### Maintenance
+
+- **Update beta release documentation and README installation steps** (`9681dd4`)
+  Updates the 1.0.0-beta.1 release documentation to reflect the new Beta status and the correct prerelease version to install.
+
+Key changes:
+- CHANGELOG.md: Adds/updates a “Changed” entry documenting the documentation updates, including how to install the package from Packagist (without requiring a local checkout) and noting that maintainers may need to preserve version identifiers for later setup.
+- README.md: 
+  - Updates the maintainer/badge status from “Preview” to “Beta” and refines the head description text from “Preview file attributes…” to “File attributes…”.
+  - Revises the setup/requirements section to state that Filoquent version 1.0.0-alpha.1 is available on Packagist under the beta channel and warns that APIs may change before the stable release.
+  - Changes Composer installation guidance from a local path repository + dev requirement (e.g., using a `packages/filoquent` path repo and `artisan-toolbox/filoquent:1.x-dev`) to installing a specific version via Packagist: `composer require artisan-toolbox/filoquent:1.0.0-alpha.1`.
+- Skill documentation (resources/boost/skills/filoquent-development/SKILL.md): Replaces guidance aimed at an unpublished dev preview (including PHP ^8.5/Laravel 13 and identity `0.1.0-alpha.1`) with instructions for the published prerelease and the same beta/API-change warning. It also removes custom Composer path repository setup and switches to a direct versioned Composer require (`composer require artisan-toolbox/filoquent:1.0.0-alpha.1`).
+- Tests: Updates `tests/Unit/ReadmeHeadTest.php` expectations so automated checks for README head metadata match the updated description and badge alt text/image metadata (Preview → Beta).
+
+Why it matters / user impact:
+- This is guidance-only (no production behavior changes shown), but it directly affects how users install the prerelease: it switches from a local dev checkout setup to requiring an explicit prerelease version from Packagist.
+- Users relying on the old “Preview” instructions or custom Composer repository configuration will need to follow the new direct `composer require` workflow.
+
+Compatibility / migration notes:
+- No runtime/API compatibility changes are claimed in this diff; the main migration consideration is installation configuration: moving away from local checkout/path repositories toward version-pinned Composer requirements for the prerelease.
+
 ## [1.0.0-alpha.1] - 2026-11-13
 
 ### Features
