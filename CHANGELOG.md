@@ -61,6 +61,7 @@
 
 ### Changed
 
+- Update the README and consumer skill for Beta status and the published `1.0.0-alpha.1` release, with installation from Packagist without a local checkout. Preserve version identifiers for the maintainer to set.
 - Run Rector in the Composer validation suite and every Windows/Linux dependency lane. Keep the declared Laravel 13.0 compatibility and explicit-null disk fallback. Install the official Mockery PHPStan extension and constrain development ParaTest to the compatible 7.27 series.
 - Require PHPStan 2.3.5, Rector 2.8.4 with its Laravel extension 2.7.3, and the Pest type-coverage plugin 5.1 for compatible analysis and PHPUnit 13 type coverage in the lowest dependency lane.
 - Run the full database behavior suite on MySQL 8.4 and PostgreSQL 18 in both lowest and stable dependency CI lanes, with private Redis recovery services and isolated per-worker databases. Preserve SQLite on Ubuntu and Windows, run native Redis checks in both dependency lanes, and retain explicit SQLite-only fixtures.

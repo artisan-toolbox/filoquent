@@ -5,7 +5,7 @@
 </div>
 
 <p id="maintainer-badges" align="center">
-<a href="https://atb.dev.br/packages/filoquent/"><img src="https://img.shields.io/badge/Status-Preview-FF5947?style=flat-square" alt="Preview"></a>
+<a href="https://atb.dev.br/packages/filoquent/"><img src="https://img.shields.io/badge/Status-Beta-FF5947?style=flat-square" alt="Beta"></a>
 <a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/PHP-%5E8.5-777BB4?style=flat-square" alt="PHP"></a>
 <a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square" alt="Laravel"></a>
 <a href="https://github.com/artisan-toolbox/filoquent/actions/workflows/tests.yml?query=branch%3A1.x"><img src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=1.x&amp;label=Tests&amp;style=flat-square" alt="Tests"></a>
@@ -13,17 +13,16 @@
 </p>
 
 <p id="maintainer-description" align="center">
-    Preview file attributes for Eloquent with upload variants and indexed storage ownership.
+    File attributes for Eloquent with upload variants and indexed storage ownership.
 </p>
 <!-- MAINTAINER:README_HEAD:END -->
 
 Filoquent connects Laravel filesystems to Eloquent attributes. Assign an uploaded file, local path, or stream, then save the model. Middleware can produce named variants. An indexed ownership ledger coordinates replacement and permanent deletion.
 
-Requires PHP ^8.5 and Laravel 13. This is an unpublished development preview, not a stable release. With a reviewed checkout at `packages/filoquent` in your Laravel application, run:
+Requires PHP ^8.5 and Laravel 13. Version `1.0.0-alpha.1` is available on [Packagist](https://packagist.org/packages/artisan-toolbox/filoquent). Filoquent is in beta. APIs may change before the stable release. From your Laravel application's root, run:
 
 ```bash
-composer config repositories.filoquent path packages/filoquent
-composer require artisan-toolbox/filoquent:1.x-dev
+composer require artisan-toolbox/filoquent:1.0.0-alpha.1
 php artisan migrate
 ```
 

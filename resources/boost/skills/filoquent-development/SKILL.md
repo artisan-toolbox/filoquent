@@ -8,19 +8,18 @@ metadata:
 
 # Use Filoquent file attributes
 
-Inspect `composer show artisan-toolbox/filoquent` and the installed API first. This unpublished development preview requires PHP ^8.5 and Laravel 13. The source identity `0.1.0-alpha.1` is not a stable release. Never assume the APIs below exist in an older installed scaffold.
+Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. Version `1.0.0-alpha.1` is published on Packagist. Filoquent is in beta, and APIs may change before the stable release. Never assume the APIs below exist in an older installed scaffold.
 
 ## Install and prepare
 
-Start in an existing Laravel 13 application with a database and writable Laravel filesystem. With a reviewed source checkout at `packages/filoquent`, run from the application root:
+Start in an existing Laravel 13 application with a database and writable Laravel filesystem. Run from the application root:
 
 ```bash
-composer config repositories.filoquent path packages/filoquent
-composer require artisan-toolbox/filoquent:1.x-dev
+composer require artisan-toolbox/filoquent:1.0.0-alpha.1
 php artisan migrate
 ```
 
-Keep the nested development checkout out of the application's Git history. Laravel discovers `FiloquentServiceProvider`. When discovery is disabled, register it in `bootstrap/providers.php`. No frontend installation is needed. The package migrations create `filoquent_uploads` and its SQL journal namespace. Install them on every participating model connection.
+The explicit prerelease version does not require changing the application's global `minimum-stability` or adding a custom repository. Laravel discovers `FiloquentServiceProvider`. When discovery is disabled, register it in `bootstrap/providers.php`. No frontend installation is needed. The package migrations create `filoquent_uploads` and its SQL journal namespace. Install them on every participating model connection.
 
 Create a nullable JSON attribute in the application's model migration:
 
