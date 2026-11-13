@@ -42,6 +42,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Own the SVG artwork in `logo/` and keep the matching copies in the central documentation application synchronized.
 - The declared compatibility is PHP ^8.5 and Laravel 13. Preserve Linux, Windows, lowest, and stable CI lanes within those constraints. Run the complete database behavior suite on SQLite, MySQL 8.4, and PostgreSQL 18 in both dependency lanes. Preserve SQLite on Ubuntu and Windows, native Redis recovery in both lanes, and private Redis services in the MySQL and PostgreSQL jobs. SQLite-specific fixtures must select SQLite explicitly rather than being reported as native engine coverage.
 - Keep the shared PHPStan profile in `phpstan.neon.dist`; `phpstan.neon` includes that profile. Analyze source, configuration, and tests. The Composer extension installer registers Larastan, Carbon, and the Pest 5 PHPStan adapter, so do not include those extensions manually. Keep `configDirectories` pointed at this package's `config` directory when Larastan uses Testbench.
+- Preserve the shared `phpstan-platform.php` include. Windows analysis uses one process because Larastan boots the same Testbench skeleton in each worker. Other systems keep PHPStan's default parallelism. Do not replace this with skipped analysis or reduced rules.
 
 ## Maintenance command contracts
 
