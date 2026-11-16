@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.0.0-beta.4] - 2026-11-16
+
+### Features
+
+- **Add typed Assets and persisted regenerateMissing fallback** (`e7a4621`)
+  Introduces and wires new persisted “missing asset regeneration” capabilities with typed/generic Assets support and middleware fallback behavior.
+
+Key changes:
+- Adds generic/typed Assets documentation and read-only “magic” variant properties plus passive isset() support, improving developer ergonomics and correctness when working with variant keys.
+- Implements Assets::regenerateMissing(keys, source?) guarded by presence of a model AssetContext; throws FiloquentException when called without an appropriate context.
+- Adds an optional model-aware regeneration context: Assets now accepts an optional AssetContext and get() can regenerate a missing key on demand when context is present (otherwise returns null).
+- Adds a new #[RegenerateMissing] attribute on middleware classes to mark them and optionally configure a regeneration “source”.
+- Creates src/Support/AssetContext to discover the configured middleware (via the attribute) and to call regeneration on models implementing regeneration support; includes strict validation and clear failure when the model cannot regenerate.
+- Propagates AssetContext through AsFile casts so regeneration can occur based on the Eloquent model and cast key.
+- Adds regeneration helpers on the HasFiloquent concern to regenerate missing file variants safely: verifies model idle/not-dirty, validates keys, rejects stale data mismatches, requires non-null middleware when regeneration is needed, and restores raw attributes when save fails.
+- Adds strict key validation in PendingAsset (anchored ASCII regex and centralized validateKey/validateKeys helpers) to keep regeneration input handling consistent.
+- Extends the PendingUpload value object with optional existing manifest tracking, a list of keys, and a source, enabling more precise regeneration/extension workflows.
+- Updates FileWriter to centralize middleware validation and PendingAsset list normalization, and adds storeMissing() to regenerate only missing keys based on an existing manifest (selected by source/original/default rules).
+- Updates Persistence to support “extension” uploads: when PendingUpload includes an existing manifest, it locks for extension, stores only missing files, merges new variants into the parent manifest, updates filing state (including orphan handling), and records per-key extension tracking to adjust finish-time behavior.
+- Updates UploadIntent to support extension intents via an optional parentId, with UUIDv7 validation and payload versioning (decode supports versions 1 and 2; encode emits version 1 or 2 accordingly).
+
+Why it matters / user impact:
+- Enables persisted fallback regeneration of missing asset variants during read paths, reducing broken references and making asset reads more resilient.
+- Introduces stricter lifecycle and state requirements (models must be idle/not dirty; dirty/stale/borrowed/detached states are rejected) to prevent unsafe writes and inconsistent manifests.
+
+Compatibility / migration notes:
+- Regeneration APIs/behavior depend on using an Assets instance created with a suitable AssetContext (derived from middleware + model/attribute). Calling regenerateMissing without context will throw.
+- Older builds won’t understand/operate the new persisted “extended” manifests introduced by the extension workflow; downgrading may limit management of committed extended uploads.
+- Middleware configuration is now mediated by the #[RegenerateMissing] attribute and optional source selection, so projects should ensure middleware classes are annotated appropriately and that cast configurations embed/derive middleware info as expected.
+
+### Fixes
+
+- **Disconnect native test DB sessions after lifecycle** (`c63d4d3`)
+  Ensures native database sessions used during the test lifecycle are properly disconnected after lifecycle completion. This prevents test pollution/leaks and avoids resource exhaustion or cross-test interference in environments that reuse long-lived processes or native connection pools. User impact is limited to test stability and correctness; no public API changes are intended.
+
+- **Restrict phpstan to <2.3.6 for type coverage compatibility** (`2b2710d`)
+  Updates composer dependency constraints for phpstan/phpstan from ^2.3.5 to ^2.3.5 <2.3.6, preventing installation of phpstan 2.3.6+ where type coverage is reported as incompatible. This matters for CI/developer workflows that rely on consistent static analysis results. Potential compatibility impact: environments that previously resolved to 2.3.6 may now fail dependency resolution or use an older phpstan version until the constraint is relaxed again.
+
 ## [1.0.0-beta.3] - 2026-11-13
 
 ### Features

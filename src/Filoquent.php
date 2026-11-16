@@ -11,7 +11,7 @@ use ArtisanToolbox\Maintainer\Versionable\Readme\Head;
 
 class Filoquent implements Versionable, WithReadmeHead
 {
-    public const string VERSION = '1.0.0-beta.3';
+    public const string VERSION = '1.0.0-beta.4';
 
     public function readmeHead(): Head
     {
