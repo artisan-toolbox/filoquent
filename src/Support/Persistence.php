@@ -22,6 +22,9 @@ final class Persistence
     /** @var array<string, UploadIntent> */
     private array $intents = [];
 
+    /** @var array<string, string> */
+    private array $extensions = [];
+
     /** @var list<string> */
     public array $retired = [];
 
@@ -84,6 +87,11 @@ final class Persistence
 
         $prepared = [];
         foreach ($pending as $key => $assignment) {
+            if ($assignment->existing !== null) {
+                $prepared[$key] = $this->extend($model, $key, $assignment);
+
+                continue;
+            }
             $this->published[$key] = null;
             $prepared[$key] = null;
 
@@ -108,6 +116,38 @@ final class Persistence
         }
 
         return $prepared;
+    }
+
+    private function extend(Model $model, string $key, PendingUpload $assignment): string
+    {
+        $existing = $assignment->existing ?? throw new FiloquentException('Regeneration requires an existing manifest.');
+        $parent = UploadLedger::lockForExtension($model, $key, $existing);
+        $id = (string) Str::uuid7();
+        $directory = UploadLedger::generationDirectory($parent, $existing).'/variants/'.$id;
+        $additions = resolve(FileWriter::class)->storeMissing(
+            $existing, $assignment->keys, $directory,
+            $assignment->middleware ?? throw new FiloquentException('Regeneration requires middleware.'), $assignment->source,
+            RedisUploadJournal::enabled() ? function (Assets $assets) use ($model, $key, $id, $parent): void {
+                $intent = UploadIntent::forModel($model, $key, $id, $assets, $parent);
+                UploadLedger::reserve($model, $intent);
+                resolve(RedisUploadJournal::class)->record($intent);
+                $this->intents[$key] = $intent;
+            } : null,
+        );
+
+        if ($additions === null) {
+            return json_encode($existing, JSON_THROW_ON_ERROR);
+        }
+        $merged = $existing->all();
+        foreach ($additions->all() as $variant => $asset) {
+            $merged[$variant] = new Asset($asset->filesystem, $asset->path, false);
+        }
+        $assets = new Assets($merged);
+        $model->getConnection()->table('filoquent_uploads')->where('id', $parent)->update(['manifest' => json_encode($assets, JSON_THROW_ON_ERROR), 'orphaned_at' => null]);
+        $this->published[$key] = ['id' => $parent, 'assets' => $assets];
+        $this->extensions[$key] = $id;
+
+        return json_encode($assets, JSON_THROW_ON_ERROR);
     }
 
     public function finish(Model $model): void
@@ -142,7 +182,7 @@ final class Persistence
                             }
                         }
                     });
-                } else {
+                } elseif (! isset($this->extensions[$key])) {
                     UploadLedger::activate($model, $key, $generation['id'], $generation['assets']);
                 }
             }

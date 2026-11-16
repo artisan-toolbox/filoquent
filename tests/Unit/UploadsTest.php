@@ -63,6 +63,49 @@ it('round trips strict immutable asset metadata without storage access', functio
         ->and((string) new Assets([]))->toBe('');
 });
 
+it('reads variants through magic properties without filesystem access', function (): void {
+    $assets = new Assets(['thumb' => new Asset('unconfigured', 'thumb.webp')]);
+
+    expect($assets->__get('thumb'))->toBe($assets->get('thumb'))
+        ->and($assets->__get('missing'))->toBeNull()
+        ->and(isset($assets->thumb))->toBeTrue()
+        ->and(isset($assets->missing))->toBeFalse();
+});
+
+it('preserves supported variant keys when creating pending assets', function (string $key): void {
+    $upload = Upload::from(__FILE__);
+
+    expect($upload->asset(key: $key)->key)->toBe($key);
+})->with(['original', 'thumb', 'thumbnailLarge', 'thumbnail_large', 'image2', 'Large', 'thumbnail-large']);
+
+it('rejects invalid variant keys', function (string $key): void {
+    expect(fn () => Upload::from(__FILE__)->asset(key: $key))->toThrow(FiloquentException::class);
+})->with(['2thumb', '_thumb', 'thumb.large', 'thumb large', '', 'écran']);
+
+it('keeps historical hyphenated keys readable', function (): void {
+    $manifest = ['old-thumb' => ['filesystem' => 'local', 'path' => 'old.webp', 'default' => true]];
+    $assets = Assets::fromArray($manifest);
+
+    expect($assets->get('old-thumb'))->toBe($assets->__get('old-thumb'))
+        ->and($assets->toArray())->toBe($manifest);
+});
+
+it('reads variants whose keys match common internal state names', function (): void {
+    $assets = new Assets(['assets' => new Asset('local', 'assets.txt'), 'context' => new Asset('local', 'context.txt', false)]);
+
+    expect($assets->__get('assets'))->toBe($assets->get('assets'))
+        ->and($assets->__get('context'))->toBe($assets->get('context'));
+});
+
+it('restores asset snapshots serialized before model contexts were introduced', function (): void {
+    $assets = new Assets(['original' => new Asset('local', 'original.txt')]);
+    $serialized = sprintf('O:%d:"%s":1:{%s%s}', strlen(Assets::class), Assets::class, serialize("\0".Assets::class."\0assets"), serialize($assets->all()));
+    $restored = unserialize($serialized);
+
+    expect($restored->toArray())->toBe($assets->toArray())
+        ->and($restored->get('missing'))->toBeNull();
+});
+
 it('rejects malformed manifests', function (array $manifest): void {
     expect(fn () => Assets::fromArray($manifest))->toThrow(FiloquentException::class);
 })->with([

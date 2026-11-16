@@ -1,6 +1,6 @@
 ---
 name: filoquent-development
-description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, configuring storage through environment variables, configuring file naming or middleware variants, generating Filoquent upload middleware with Artisan, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, inspecting operational status, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
+description: Use Filoquent file attributes in Laravel applications. Apply when assigning uploads, local paths, or streams to Eloquent models, declaring native PHP File configuration attributes, typing asset variants with generics, regenerating missing variants or enabling middleware fallback, configuring storage through environment variables, configuring file naming or middleware variants, generating Filoquent upload middleware with Artisan, reading stored assets, renaming owner tables, configuring optional Redis rollback recovery, inspecting operational status, checking referenced files, scheduling background maintenance, or safely draining retirements and collecting orphaned uploads. Do not select for unrelated Laravel work or generic filesystem tasks.
 license: MIT
 metadata:
   author: Allan Mariucci Carvalho
@@ -8,14 +8,14 @@ metadata:
 
 # Use Filoquent file attributes
 
-Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.2`, which includes native PHP `File` attributes, persisted-state enums, and the upload middleware generator described below. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
+Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.3`, which adds operational status reporting and includes native PHP `File` attributes, persisted-state enums, and the upload middleware generator described below. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
 
 ## Install and prepare
 
 Start in an existing Laravel 13 application with a database and writable Laravel filesystem. Run from the application root:
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-beta.2
+composer require artisan-toolbox/filoquent:1.0.0-beta.3
 php artisan migrate
 ```
 
@@ -99,7 +99,30 @@ Beta 2 exposes every configuration value through environment variables. When upg
 
 Import `ArtisanToolbox\Filoquent\Enums\FileNaming`. Use `AsFile::using(naming: FileNaming::Original)`, `AsFile::using(name: 'document')`, or `AsFile::using(middleware: DocumentVariants::class)`. Names omit extensions. `FileNaming::Uuid` is the default. The `naming` argument accepts only these enum cases, not raw strings. Invalid serialized cast policies fail when Laravel resolves the cast. Existing asset metadata needs no migration. Content MIME supplies the extension unless trusted middleware overrides it. The model directory is always the SHA1 of its FQN plus `::` plus the attribute name when an upload is created. It cannot be customized. That hash is not used for reading, integrity checks, replacement, or deletion. Every field upload has a separate UUIDv7 directory.
 
-A populated attribute returns immutable `Assets`; null stays null. Use `default()`, `get('thumbnail')`, and `all()`. A missing variant returns null. String conversion returns the default URL. Each `Asset` exposes `filesystem`, `path`, `default`, `url()`, `temporaryUrl()`, `exists()`, and `readStream()`. Close returned streams. Private delivery and temporary URL support depend on the disk adapter. Serializing returns the key-to-metadata map without another DB query or filesystem listing.
+A populated attribute returns immutable `Assets`; null stays null. Use `default()`, `get('thumbnail')`, and `all()`. A missing variant returns null unless a development build explicitly enables middleware fallback as described below. String conversion returns the default URL. Each `Asset` exposes `filesystem`, `path`, `default`, `url()`, `temporaryUrl()`, `exists()`, and `readStream()`. Close returned streams. Private delivery and temporary URL support depend on the disk adapter. Serializing returns the key-to-metadata map without another DB query or filesystem listing.
+
+### Type and regenerate variants in development builds
+
+These APIs are development additions on `1.x`, not part of published `1.0.0-beta.3`. Check the installed implementation before using them. Keep the published installation instructions above for released users.
+
+On the model class, import `Asset` and `Assets` and declare both key hints and nullable magic properties:
+
+```php
+/**
+ * @property-read Assets<'original'|'thumb', object{original: Asset|null, thumb: Asset|null}>|null $attachment
+ * @property-write \Illuminate\Http\UploadedFile|string|null $attachment
+ */
+```
+
+The first generic parameter constrains `get()` and `regenerateMissing()` keys; the optional second supplies an object-shape mixin for property completion. `Assets<'original'|'thumb'>` supplies key hints alone. These static declarations do not ensure a key exists in older rows. Do not declare a native Eloquent file property. Keep variants nullable and account for the IDE's supported annotation syntax.
+
+For a saved clean model with configured middleware, call `$document->attachment->regenerateMissing(['thumb'])`. It reruns the complete handler, uploads only requested absent keys, and saves immediately before returning the merged assets. Existing metadata, files, and the default remain unchanged. Repeating an existing key does no work. It uses `original` when retained, otherwise the default; pass `source: 'master'` only when that key is already stored and readable. Regeneration requires an exact active receipt and a unique saved reference in the owner row. Duplicate manifests across fields are rejected; a column rename remains supported without rewriting receipt provenance. Standalone or natively unserialized snapshots are detached and cannot authorize regeneration.
+
+Enable automatic generation by importing `ArtisanToolbox\Filoquent\Attributes\RegenerateMissing` and putting `#[RegenerateMissing]` on the concrete middleware class. Class attributes are not inherited. `#[RegenerateMissing(source: 'master')]` selects an existing master for fallback. Both `$assets->get('thumb')` and `$assets->thumb` then generate and save a supported missing output before returning it. Unknown output keys return null. Without the attribute, reads remain passive. `isset()`, `all()`, `default()`, string conversion, and serialization never generate. Existing keys whose physical files disappeared are not repaired.
+
+Fallback performs remote reads, processing, storage writes, model save events, and SQL work during a read. Save or discard unrelated edits first. Do not call it recursively from model observers. Dirty/stale models, absent source keys, invalid output, and refused saves raise `FiloquentException`; source-read adapter exceptions and observer failures can propagate. A later enclosing transaction can still roll back. Refresh the model afterward. Redis recovery records only additions with version 2 intents and preserves original files during pending cleanup. Without Redis, failed attempts can leave untracked bytes. Before downgrading, drain extension intents and pending cleanup, replace or remove every extended upload through the current public model API, and finish its retirements. An empty journal does not make committed extended manifests compatible with older builds.
+
+Regeneration cannot recover discarded pixels or metadata. If the original was reduced after producing `large` and `small`, a missing `large` can only be generated from the retained reduced bytes. Filename-dependent or stateful middleware can also produce a different result. Keep middleware repeatable and generated sources readable until regeneration finishes. Keys start with an ASCII letter and use letters, digits, hyphens, or underscores. Prefer `thumbnailLarge` or `thumbnail_large` for ordinary property access. Hyphenated keys remain supported for creation, regeneration, and reads through `get('large-thumb')` or `$assets->{'large-thumb'}`. See [typed variants and regeneration](https://atb.dev.br/docs/filoquent/assets) for complete runnable examples and limits.
 
 ### Generate upload middleware
 
@@ -139,7 +162,7 @@ Preview `php artisan filoquent:gc --limit=100` to reconcile committed active rec
 
 ## Check files and schedule maintenance
 
-`filoquent:status` is an unreleased addition after `1.0.0-beta.2`. Check `php artisan list filoquent` before recommending it for an installed release. From the application root, run `php artisan filoquent:status` after migrating the selected ledger. Use `--connection=uploads` for another configured SQL writer. Its two-column report shows filesystem configuration and a read probe, local root permissions, private Redis client/server/database parameters and connection health, scoped journal intents, and current upload counts by state. Remote write permissions are not tested. Disabled Redis is not resolved.
+`filoquent:status` is available in the published `1.0.0-beta.3` release. Update older installations before using it and confirm registration with `php artisan list filoquent`. From the application root, run `php artisan filoquent:status` after migrating the selected ledger. Use `--connection=uploads` for another configured SQL writer. Its two-column report shows filesystem configuration and a read probe, local root permissions, private Redis client/server/database parameters and connection health, scoped journal intents, and current upload counts by state. Remote write permissions are not tested. Disabled Redis is not resolved.
 
 Status counts upload generations, including their variants, rather than individual physical files or a lifetime total. `Pending recovery` counts SQL intents awaiting reconciliation and their cleanup grace period. `Awaiting deletion` counts committed retired receipts. Redis intents can overlap SQL receipts, so do not add these totals. Status neither lists storage nor changes owners, receipts, journal entries, or files. Exit codes are 0 for successful checks, 1 for unavailable checks or reporting failures, and 2 for invalid connection options. Unavailable counts remain unknown. It uses maintenance start/completion logging, including under `--silent`, and always reports partial coverage because it does not audit existing file references. See [operational status](https://atb.dev.br/packages/filoquent/health/#status).
 

@@ -8,6 +8,7 @@ use ArtisanToolbox\Filoquent\Assets;
 use ArtisanToolbox\Filoquent\Concerns\HasFiloquent;
 use ArtisanToolbox\Filoquent\Enums\FileNaming;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
+use ArtisanToolbox\Filoquent\Support\AssetContext;
 use ArtisanToolbox\Filoquent\Support\PendingUpload;
 use ArtisanToolbox\Filoquent\Upload;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
@@ -39,7 +40,21 @@ final class AsFile implements CastsAttributes, SerializesCastableAttributes
     /** @param array<string, mixed> $attributes */
     public function get(Model $model, string $key, mixed $value, array $attributes): ?Assets
     {
-        return self::decode($value instanceof PendingUpload ? $model->getRawOriginal($key) : $value);
+        return self::decode($value instanceof PendingUpload ? $model->getRawOriginal($key) : $value)?->withContext(new AssetContext($model, $key));
+    }
+
+    /** @internal */
+    public static function middlewareFor(Model $model, string $key): ?string
+    {
+        $cast = explode(':', $model->getCasts()[$key] ?? '', 2);
+
+        if ($cast[0] !== self::class) {
+            return null;
+        }
+
+        $middleware = explode(',', $cast[1] ?? '')[2] ?? '';
+
+        return $middleware === '' ? null : rawurldecode($middleware);
     }
 
     /** @param array<string, mixed> $attributes */

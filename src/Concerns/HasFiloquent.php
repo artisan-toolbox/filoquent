@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace ArtisanToolbox\Filoquent\Concerns;
 
+use ArtisanToolbox\Filoquent\Assets;
+use ArtisanToolbox\Filoquent\Casts\AsFile;
+use ArtisanToolbox\Filoquent\Enums\FileNaming;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
+use ArtisanToolbox\Filoquent\PendingAsset;
 use ArtisanToolbox\Filoquent\Support\FileAttributes;
 use ArtisanToolbox\Filoquent\Support\OperationCancelled;
 use ArtisanToolbox\Filoquent\Support\OwnerTables;
@@ -113,6 +117,51 @@ trait HasFiloquent
     public function assertFiloquentIdle(): void
     {
         throw_if($this->filoquentOperation !== null, FiloquentException::class, 'Assign files before saving. Recursive file operations on one model are unsupported.');
+    }
+
+    /**
+     * @internal
+     *
+     * @template TKey of string
+     * @template TVariants of object
+     *
+     * @param  Assets<TKey, TVariants>  $snapshot
+     * @param  list<TKey>  $keys
+     * @return Assets<TKey, TVariants>
+     */
+    public function regenerateFiloquentVariants(string $attribute, Assets $snapshot, array $keys, ?string $middleware, ?string $source): Assets
+    {
+        $this->assertFiloquentIdle();
+        throw_if(! $this->exists || $this->isDirty(), FiloquentException::class, 'Save or discard model changes before regenerating missing variants.');
+        PendingAsset::validateKeys($keys);
+
+        $attributes = $this->getAttributes();
+        $current = AsFile::decode($attributes[$attribute] ?? null);
+        throw_if($current === null, FiloquentException::class, 'Reload a stale file attribute before regenerating variants.');
+        foreach ($snapshot->toArray() as $key => $entry) {
+            throw_if(($current->toArray()[$key] ?? null) !== $entry, FiloquentException::class, 'Reload a stale file attribute before regenerating variants.');
+        }
+
+        $missing = array_values(array_diff(array_unique($keys), array_keys($current->all())));
+
+        if ($missing === []) {
+            return $this->getAttribute($attribute);
+        }
+        throw_if($middleware === null, FiloquentException::class, 'Missing variants require upload middleware on the file attribute.');
+
+        $this->attributes[$attribute] = new PendingUpload(null, FileNaming::Uuid, null, $middleware, $current, $missing, $source);
+
+        try {
+            throw_unless($this->save(), FiloquentException::class, 'The model refused to save regenerated variants.');
+        } catch (Throwable $exception) {
+            if (($this->getAttributes()[$attribute] ?? null) instanceof PendingUpload) {
+                $this->setRawAttributes($attributes);
+            }
+
+            throw $exception;
+        }
+
+        return $this->getAttribute($attribute);
     }
 
     /** @return array<string, mixed> */

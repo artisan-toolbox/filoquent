@@ -11,6 +11,7 @@ use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use Throwable;
@@ -47,7 +48,14 @@ final class UploadLedger
         $receipt = $query->lockForUpdate()->first();
 
         throw_if($connection->transactionLevel() === 0 || $receipt === null || ! $intent->matches($receipt)
-            || Persistence::ownerKey($model) === null || $query->update(['state' => UploadState::Active->value, 'owner_key' => (string) Persistence::ownerKey($model)]) !== 1, FiloquentException::class, 'The upload writing reservation is missing or changed.');
+            || Persistence::ownerKey($model) === null, FiloquentException::class, 'The upload writing reservation is missing or changed.');
+
+        if ($intent->parentId !== null) {
+            throw_unless(self::extensionCommitted($connection, $intent), FiloquentException::class, 'The parent receipt did not persist the added variants.');
+            $query->delete();
+        } else {
+            throw_unless($query->update(['state' => UploadState::Active->value, 'owner_key' => (string) Persistence::ownerKey($model)]) === 1, FiloquentException::class, 'The upload writing reservation is missing or changed.');
+        }
     }
 
     public static function committed(Connection $connection, UploadIntent $intent): bool
@@ -59,8 +67,34 @@ final class UploadLedger
         $receipt = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $intent->id)
             ->whereIn('state', [UploadState::Active->value, UploadState::Pending->value, UploadState::Retired->value])->first();
 
-        return $receipt !== null && $intent->matches($receipt)
-            && ($receipt->state !== UploadState::Active->value || $receipt->owner_key !== null);
+        return ($receipt !== null && $intent->matches($receipt)
+            && ($receipt->state !== UploadState::Active->value || $receipt->owner_key !== null))
+            || ($intent->parentId !== null && self::extensionCommitted($connection, $intent));
+    }
+
+    private static function extensionCommitted(Connection $connection, UploadIntent $intent, bool $lock = false): bool
+    {
+        $receipt = $connection->table('filoquent_uploads')->useWritePdo()->where('id', $intent->parentId)
+            ->whereIn('state', [UploadState::Active->value, UploadState::Retired->value])
+            ->when($lock, static fn (Builder $query): Builder => $query->lockForUpdate())->first();
+
+        if ($receipt === null || ($receipt->owner_table !== $intent->ownerTable && ($receipt->journal_owner_table ?? null) !== $intent->ownerTable)
+            || $receipt->owner_key_name !== $intent->ownerKeyName || $receipt->owner_key !== $intent->ownerKey) {
+            return false;
+        }
+        $assets = AsFile::decode($receipt->manifest);
+
+        if ($assets === null) {
+            return false;
+        }
+        self::generationDirectory($receipt->id, $assets);
+        foreach ($intent->assets->all() as $key => $asset) {
+            if (($assets->toArray()[$key] ?? null) !== ['filesystem' => $asset->filesystem, 'path' => $asset->path, 'default' => false]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static function promote(Connection $connection, UploadIntent $intent): void
@@ -69,6 +103,9 @@ final class UploadLedger
 
         try {
             $connection->transaction(static function () use ($connection, $intent): void {
+                if ($intent->parentId !== null && $connection->getDriverName() === 'pgsql') {
+                    $connection->statement('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
+                }
                 $now = CarbonImmutable::now('UTC');
                 $connection->table('filoquent_uploads')->insert([
                     ...$intent->receipt(),
@@ -76,6 +113,10 @@ final class UploadLedger
                     'checked_at' => $now->addHours(Reconciler::GRACE_HOURS)->format('Y-m-d H:i:s.u'),
                     'orphaned_at' => $now->format('Y-m-d H:i:s.u'),
                 ]);
+
+                if ($intent->parentId !== null && self::extensionCommitted($connection, $intent, lock: true)) {
+                    $connection->table('filoquent_uploads')->where('id', $intent->id)->where('state', UploadState::Pending->value)->delete();
+                }
             });
         } catch (UniqueConstraintViolationException $exception) {
             // PostgreSQL needs the failed insert transaction rolled back before this read.
@@ -133,6 +174,32 @@ final class UploadLedger
             'state' => UploadState::Active->value,
             'checked_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s.u'),
         ]);
+    }
+
+    public static function lockForExtension(Model $model, string $attribute, Assets $assets): string
+    {
+        $id = basename(dirname($assets->default()->path ?? ''));
+        self::generationDirectory($id, $assets);
+        $receipt = $model->getConnection()->table('filoquent_uploads')->useWritePdo()->where('id', $id)
+            ->where('state', UploadState::Active->value)->lockForUpdate()->first();
+        throw_if($receipt === null || $receipt->owner_table !== (new OwnerTables($model->getConnection()))->canonical($model->getTable())
+            || $receipt->owner_key_name !== $model->getKeyName() || $receipt->owner_key !== (string) Persistence::ownerKey($model)
+            || ! AsFile::matches(AsFile::decode($receipt->manifest), $assets), FiloquentException::class, 'Regeneration requires the exact active ownership receipt.');
+
+        foreach (get_object_vars(Persistence::row($model)->first() ?? (object) []) as $column => $value) {
+            if ($column === $attribute || ! is_string($value)) {
+                continue;
+            }
+
+            try {
+                $other = AsFile::decode($value);
+            } catch (FiloquentException) {
+                continue;
+            }
+            throw_if(AsFile::matches($other, $assets), FiloquentException::class, 'Regeneration requires an upload referenced by only one owner field.');
+        }
+
+        return $id;
     }
 
     public static function retire(Model $model, Assets $assets): ?string
@@ -206,7 +273,9 @@ final class UploadLedger
             || count(explode('/', $directory)) < 3, FiloquentException::class, "Unexpected storage directory for upload {$id}.");
 
         foreach ($assets->all() as $asset) {
-            throw_if(dirname($asset->path) !== $directory, FiloquentException::class, "File outside the directory owned by upload {$id}.");
+            $parent = dirname($asset->path);
+            $extension = dirname($parent) === $directory.'/variants' && Str::isUuid(basename($parent), 7) && ! $asset->default;
+            throw_if($parent !== $directory && ! $extension, FiloquentException::class, "File outside the directory owned by upload {$id}.");
         }
 
         return $directory;

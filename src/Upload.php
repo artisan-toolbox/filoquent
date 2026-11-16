@@ -35,7 +35,11 @@ final readonly class Upload
 
         throw_if($source instanceof UploadedFile && ! $source->isValid(), FiloquentException::class, 'The uploaded file did not complete successfully.');
 
-        if ($source instanceof File || is_string($source)) {
+        if ($source instanceof Asset) {
+            $stream = $source->readStream();
+            $name = basename($source->path);
+            $owned = true;
+        } elseif ($source instanceof File || is_string($source)) {
             $path = $source instanceof File ? $source->getPathname() : $source;
             PendingAsset::fromPath($path);
             $name = $source instanceof UploadedFile ? $source->getClientOriginalName() : basename($path);

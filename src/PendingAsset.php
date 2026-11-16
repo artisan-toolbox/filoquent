@@ -23,7 +23,7 @@ final readonly class PendingAsset
         throw_if(str_contains($path, "\0") || str_contains($path, '://')
             || ! preg_match('~^(?:/|[a-zA-Z]:[\\\\/])~', $path) || ! is_file($path) || ! is_readable($path), FiloquentException::class, 'A pending asset requires an absolute readable local file path.');
 
-        throw_unless(preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/D', $key), FiloquentException::class, 'A variant key must start with a letter and contain only letters, digits, hyphens, or underscores.');
+        self::validateKey($key);
 
         $name ??= pathinfo($path, PATHINFO_FILENAME);
 
@@ -37,5 +37,25 @@ final readonly class PendingAsset
         Asset::validatePath($name.'.'.$extension);
 
         return new self($path, $key, $name, strtolower($extension), $default);
+    }
+
+    /** @internal */
+    public static function validateKey(string $key): void
+    {
+        throw_unless(preg_match('/\A[A-Za-z][A-Za-z0-9_-]*\z/', $key), FiloquentException::class, 'A variant key must start with an ASCII letter and contain only letters, digits, hyphens, or underscores.');
+    }
+
+    /**
+     * @internal
+     *
+     * @param  array<array-key, mixed>  $keys
+     */
+    public static function validateKeys(array $keys): void
+    {
+        throw_unless(array_is_list($keys), FiloquentException::class, 'Missing variant keys must be a list.');
+        foreach ($keys as $key) {
+            throw_unless(is_string($key), FiloquentException::class, 'Missing variant keys must be strings.');
+            self::validateKey($key);
+        }
     }
 }

@@ -38,9 +38,26 @@ Compatibility considerations:
 
 ### Added
 
+- Generic `Assets<TKey, TVariants>` annotations, read-only magic variant properties, and passive `isset()` support. Model PHPDoc can declare literal keys for `get()` and nullable object shapes for IDE property completion.
+- `Assets::regenerateMissing()` reruns current middleware from a retained source, uploads only requested absent keys, and saves the merged manifest and ownership receipt. Existing paths, bytes, defaults, and disk metadata remain unchanged. Missing physical files with existing keys are not repaired. Reduced or transformed originals cannot restore lost information.
+- `#[RegenerateMissing]` on a concrete middleware enables persisted fallback for missing `get()` and property reads. Its optional `source` selects a retained variant. Reads remain passive without the attribute. Regeneration rejects dirty, stale, borrowed, or detached models and propagates save and storage failures.
+- Independent UUID directories and version 2 journal intents for added variants protect originals during rollback recovery. Version 1 intents and existing serialized asset snapshots remain readable. No database migration is required. Before downgrading, drain extension intents and pending cleanup, then replace or remove every extended upload through the current public model API and finish its retirements. Older builds cannot manage committed extended manifests, even after the journal is empty.
+- An existing `Asset` can supply source bytes to `Upload::from()` or a file assignment, producing an independent copy without transferring ownership.
+
 - `filoquent:status` displays a Laravel-style two-column overview of filesystem access, effective private Redis connection parameters and health, scoped journal backlog, and current upload ledger counts. It supports `--connection`, preserves stored data, omits credentials and adapter exception text, and returns a nonzero exit code for unavailable checks.
 
+### Fixed
+
+- Regeneration rejects duplicate upload references across fields on the same owner row. A borrowed manifest cannot alter the original field's receipt. A uniquely referenced upload remains regenerable after a column rename, preserving historical receipt provenance.
+- Extension journal recovery remains valid after explicit owner table remapping or removal. Promotion synchronizes on the private child UUID before inspecting the parent, so committed additions never receive pending cleanup authority. PostgreSQL extension promotion uses transaction-local read committed isolation to observe a writer that commits while promotion waits, preserving the connection's configured default isolation.
+
+### Compatibility
+
+- Variant keys retain their existing grammar, including hyphens. Prefer camelCase or snake_case for ordinary property access; use `get('large-thumb')` or `$assets->{'large-thumb'}` for hyphenated keys.
+
 ### Documentation
+
+- Align the package README, contributor release identity, and consumer skill with the published `1.0.0-beta.3` release and identify `filoquent:status` as available since beta 3.
 
 - Align installation, configuration upgrade guidance, and consumer skill instructions with the published `1.0.0-beta.2` release.
 

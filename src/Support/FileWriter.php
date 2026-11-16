@@ -21,19 +21,12 @@ class FileWriter
     /** @param Closure(Assets): void|null $beforeWrite */
     public function store(Upload $upload, string $filesystem, string $directory, FileNaming $naming = FileNaming::Uuid, ?string $name = null, ?string $middleware = null, ?Closure $beforeWrite = null): Assets
     {
-        throw_if($middleware !== null && ! is_subclass_of($middleware, Middleware::class), FiloquentException::class, 'Upload middleware must extend the Filoquent Middleware class.');
-
-        $output = $middleware === null ? $upload->asset() : resolve($middleware)->handle($upload);
-        $pending = $output instanceof PendingAsset ? [$output] : $output;
-
-        throw_if(! is_array($pending) || ! array_is_list($pending) || $pending === [], FiloquentException::class, 'Upload middleware must return a pending asset or a nonempty list of pending assets.');
+        $pending = $this->prepare($upload, $middleware);
 
         $assets = [];
         $sources = [];
 
         foreach ($pending as $file) {
-            throw_if(! $file instanceof PendingAsset || isset($assets[$file->key]), FiloquentException::class, 'Upload middleware must return pending assets with unique keys.');
-
             $filename = $middleware !== null
                 ? $file->name
                 : ($name !== null
@@ -47,6 +40,55 @@ class FileWriter
         }
 
         return $this->write(new Assets($assets), $sources, $beforeWrite);
+    }
+
+    /**
+     * @internal
+     *
+     * @param  list<string>  $keys
+     * @param  Closure(Assets): void|null  $beforeWrite
+     */
+    public function storeMissing(Assets $existing, array $keys, string $directory, string $middleware, ?string $source = null, ?Closure $beforeWrite = null): ?Assets
+    {
+        $retained = $existing->all();
+        $input = $source === null ? ($retained['original'] ?? $existing->default()) : ($retained[$source] ?? null);
+        throw_if($input === null, FiloquentException::class, 'The regeneration source key is not present in the manifest.');
+        $upload = Upload::from($input);
+        $pending = $this->prepare($upload, $middleware);
+        $assets = [];
+        $sources = [];
+        foreach ($pending as $file) {
+            if (isset($retained[$file->key]) || ! in_array($file->key, $keys, true)) {
+                continue;
+            }
+            $assets[$file->key] = new Asset($input->filesystem, $directory.'/'.$file->name.'.'.$file->extension, $assets === []);
+            $sources[$file->key] = $file;
+        }
+
+        return $assets === [] ? null : $this->write(new Assets($assets), $sources, $beforeWrite);
+    }
+
+    /** @return non-empty-list<PendingAsset> */
+    private function prepare(Upload $upload, ?string $middleware): array
+    {
+        throw_if($middleware !== null && ! is_subclass_of($middleware, Middleware::class), FiloquentException::class, 'Upload middleware must extend the Filoquent Middleware class.');
+        $output = $middleware === null ? $upload->asset() : resolve($middleware)->handle($upload);
+        $pending = $output instanceof PendingAsset ? [$output] : $output;
+        throw_if(! is_array($pending) || ! array_is_list($pending) || $pending === [], FiloquentException::class, 'Upload middleware must return a pending asset or a nonempty list of pending assets.');
+        $keys = [];
+        $paths = [];
+        $defaults = 0;
+        foreach ($pending as $file) {
+            throw_if(! $file instanceof PendingAsset || isset($keys[$file->key]), FiloquentException::class, 'Upload middleware must return pending assets with unique keys.');
+            $path = strtolower($file->name.'.'.$file->extension);
+            throw_if(isset($paths[$path]), FiloquentException::class, 'Asset destination paths must be unique, including letter case.');
+            $keys[$file->key] = true;
+            $paths[$path] = true;
+            $defaults += (int) $file->default;
+        }
+        throw_if($defaults !== 1, FiloquentException::class, 'A nonempty asset manifest must have exactly one default.');
+
+        return $pending;
     }
 
     /**

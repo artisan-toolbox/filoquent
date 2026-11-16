@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use ArtisanToolbox\Filoquent\Casts\AsFile;
 use ArtisanToolbox\Filoquent\Exceptions\FiloquentException;
+use ArtisanToolbox\Filoquent\Middleware;
 use ArtisanToolbox\Filoquent\Support\RedisUploadJournal;
 use ArtisanToolbox\Filoquent\Support\UploadIntent;
 use ArtisanToolbox\Filoquent\Support\UploadLedger;
 use ArtisanToolbox\Filoquent\Tests\Fixtures\JournalDocument;
+use ArtisanToolbox\Filoquent\Upload;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Redis\Connections\Connection;
 use Illuminate\Support\Facades\Artisan;
@@ -15,6 +18,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
+
+class RedisBackfillMiddleware extends Middleware
+{
+    public function handle(Upload $file): array
+    {
+        return [$file->asset(name: 'original'), $file->asset('thumb', name: 'thumb', default: false)];
+    }
+}
 
 function integrationJournalRedis(): Connection
 {
@@ -119,6 +130,37 @@ it('uses atomic duplicate rejection exact acknowledgments and nonresurrecting re
         ->and(integrationJournalRedis()->exists(integrationJournalKey($id)))->toBe(0)
         ->and(integrationJournalRedis()->zcard(integrationJournalKey()))->toBe(0);
 })->group('redis');
+
+it('stores native extension intents and recovers only rolled back additions', function (bool $rollback): void {
+    $document = JournalDocument::query()->create(['attachment' => __FILE__]);
+    $original = $document->attachment?->default();
+    $document->mergeCasts(['attachment' => AsFile::using(middleware: RedisBackfillMiddleware::class)]);
+    DB::beginTransaction();
+    $assets = $document->attachment?->regenerateMissing(['thumb']);
+    $thumb = $assets?->get('thumb');
+    $scope = UploadLedger::scope(DB::connection());
+    $journal = resolve(RedisUploadJournal::class);
+    $records = $journal->due($scope, 10);
+    $id = array_key_first($records);
+    throw_unless(is_string($id), RuntimeException::class, 'Expected a native extension intent.');
+    $intent = UploadIntent::decode($records[$id], $scope, $id);
+    expect($intent->parentId)->toBe(basename(dirname($original->path)))
+        ->and(array_keys($intent->assets->all()))->toBe(['thumb']);
+
+    if ($rollback) {
+        DB::rollBack();
+        expect(Artisan::call('filoquent:gc', ['--apply' => true]))->toBe(0);
+        $this->travel(24)->hours();
+        expect(Artisan::call('filoquent:gc', ['--apply' => true]))->toBe(0)
+            ->and($thumb?->exists())->toBeFalse();
+    } else {
+        DB::commit();
+        expect($journal->due($scope, 10))->toBeEmpty()
+            ->and($document->fresh()?->attachment?->get('thumb')?->path)->toBe($thumb?->path)
+            ->and($thumb?->exists())->toBeTrue();
+    }
+    expect($original->exists())->toBeTrue();
+})->with([false, true])->group('redis');
 
 it('preserves the shared persistent connection database and application codecs', function (): void {
     config(['database.redis.default.database' => 1, 'database.redis.options.serializer' => Redis::SERIALIZER_PHP]);
