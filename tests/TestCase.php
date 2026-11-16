@@ -17,6 +17,14 @@ abstract class TestCase extends Orchestra
         if ($configuration !== null) {
             $app['config']->set('database.default', 'testing');
             $app['config']->set('database.connections.testing', $configuration);
+
+            $database = $app['db'];
+            $this->beforeApplicationDestroyed(static function () use ($database): void {
+                foreach ($database->getConnections() as $connection) {
+                    $connection->unsetTransactionManager();
+                    $connection->disconnect();
+                }
+            });
         }
     }
 

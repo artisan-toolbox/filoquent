@@ -48,6 +48,7 @@ Compatibility considerations:
 
 ### Fixed
 
+- Disconnect all native test database connections after each application lifecycle, preventing PostgreSQL session exhaustion while preserving isolated worker databases and full parallel suites.
 - Restrict the source checkout's PHPStan development dependency to `^2.3.5 <2.3.6`. Pest's type-coverage plugin 5.1.0 calls `AnalyserResult::getCollectedData()`, which PHPStan 2.3.6 removed. Preserve the uncached 100 percent type-coverage check and every CI dependency lane.
 - Regeneration rejects duplicate upload references across fields on the same owner row. A borrowed manifest cannot alter the original field's receipt. A uniquely referenced upload remains regenerable after a column rename, preserving historical receipt provenance.
 - Extension journal recovery remains valid after explicit owner table remapping or removal. Promotion synchronizes on the private child UUID before inspecting the parent, so committed additions never receive pending cleanup authority. PostgreSQL extension promotion uses transaction-local read committed isolation to observe a writer that commits while promotion waits, preserving the connection's configured default isolation.
