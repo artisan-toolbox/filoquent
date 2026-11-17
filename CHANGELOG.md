@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.0.0-beta.5] - 2026-11-17
+
+### Refactoring
+
+- **Consolidate Filoquent migrations into a single clean-installation baseline** (`2d7c689`)
+  Updates Filoquent’s migration strategy by consolidating the prior multi-step migration chain into a single baseline migration that directly creates the full ledger schema for new (clean) installations.
+
+What changed
+- Documentation and release notes now state that the consolidated migration creates the complete `filoquent_uploads` ledger, the `filoquent_upload_namespace` journal namespace (seeded with `id=1` and a generated UUID), and the `filoquent_owner_tables` coordination schema.
+- Compatibility posture changes: historical migration-chain upgrades are no longer supported by this development baseline. Upgrading existing environments that previously relied on the older stepwise migrations may require a different migration path (e.g., a fresh database on the new baseline) rather than expecting the old chain to upgrade forward.
+- The new schema behavior preserves existing owner-route collation/indexing behavior and includes rollback recovery guards aligned with the new baseline structure.
+- The migration set published/used by the package is expected to be exactly one timestamped file (`2026_11_12_000000_create_filoquent_tables.php`), and tests were updated accordingly.
+
+What was removed/adjusted
+- The earlier timestamped migrations that separately created/modified these pieces were deleted from the package migration set (upload table creation, journal namespace changes, and owner coordination table creation/normalization). This means environments that previously depended on those individual files to create or evolve tables will no longer get those changes unless another replacement migration path exists.
+- Rollback expectations tied to the deleted migrations were removed/updated; rollback safety is now evaluated against the consolidated schema’s conditions.
+
+Rollback/upgrade impact & migration considerations
+- Rollbacks are now explicitly refused when coordination/pending states indicate it would be unsafe to revert (for example, if pending coordination exists, if relevant journal/upload state indicates writers are still active, or if required cleanup/disablement has not occurred).
+- Because the baseline is for clean installations only, users upgrading from older migration chains should not assume the consolidated migration will “chain-up” existing historical states; plan to use a supported upgrade path or start from a new database instance as recommended in the updated documentation.
+
+User impact
+- New installations should work with a simpler migration publish/install flow (single migration file) and a consistent ledger/journal/coordination schema.
+- Upgraders may experience breaking behavior if they previously relied on stepping through the older chain or on rollback sequences for those older migrations.
+
 ## [1.0.0-beta.4] - 2026-11-16
 
 ### Features
