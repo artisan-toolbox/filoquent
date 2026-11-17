@@ -87,20 +87,16 @@ it('retires through canonical model routes while new journal intents use that sa
     expect(DB::table('filoquent_uploads')->count())->toBe(0);
 });
 
-it('normalizes historic route metadata before registry backfill while retaining original journal identities', function (): void {
+it('retains original journal identities through repeated canonical owner renames', function (): void {
     $owner = canonicalOwner('CaseDocuments');
     $first = (array) DB::table('filoquent_uploads')->first();
-    $migration = require __DIR__.'/../../database/migrations/2026_11_12_000002_create_filoquent_owner_tables.php';
-    $migration->down();
-    DB::table('filoquent_uploads')->where('id', $first['id'])->update(['owner_table' => 'main.CaseDocuments']);
+    DB::table('filoquent_uploads')->where('id', $first['id'])->update(['journal_owner_table' => 'main.CaseDocuments']);
     $original = new UploadIntent(UploadLedger::scope(DB::connection()), $first['id'], $first['owner_type'], 'main.CaseDocuments', $first['owner_key_name'], $first['owner_key'], $first['attribute'], $owner->attachment);
-    $migration->up();
     $receipt = DB::table('filoquent_uploads')->first();
     expect($receipt->owner_table)->toBe('casedocuments')
         ->and($receipt->journal_owner_table)->toBe('main.CaseDocuments')
         ->and($original->matches($receipt))->toBeTrue()
-        ->and(DB::table('filoquent_owner_tables')->pluck('owner_table')->all())->toBe(['casedocuments'])
-        ->and(fn () => $migration->down())->toThrow(FiloquentException::class);
+        ->and(DB::table('filoquent_owner_tables')->pluck('owner_table')->all())->toBe(['casedocuments']);
     foreach (['publications', 'articles'] as $to) {
         $from = $receipt->owner_table;
         Schema::rename($from, $to);

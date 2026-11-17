@@ -110,20 +110,17 @@ it('refuses removal through a materialized compatibility view and remaps every l
     }
 });
 
-it('quarantines legacy bare receipts until a qualified destination proves their manifests', function (): void {
+it('keeps ambiguous owner groups blocked until a qualified destination proves their manifests', function (): void {
     DB::statement('CREATE SCHEMA legacy_owner');
 
     try {
         postgresDocumentTable('legacy_owner.journal_documents');
         postgresDocumentTable('public.journal_documents');
         $asset = postgresDocument('legacy_owner.journal_documents')->attachment->default();
-        $migration = require __DIR__.'/../../database/migrations/2026_11_12_000002_create_filoquent_owner_tables.php';
-        $migration->down();
-        DB::table('filoquent_uploads')->update(['owner_table' => 'journal_documents']);
-        DB::statement('SET search_path TO legacy_owner, public');
-        $migration->up();
-        DB::statement('SET search_path TO public');
+        DB::table('filoquent_uploads')->update(['owner_table' => 'public.journal_documents', 'journal_owner_table' => 'journal_documents']);
         $tables = new OwnerTables(DB::connection());
+        $tables->block('public.journal_documents');
+        DB::table('filoquent_owner_tables')->where('owner_table', 'public.journal_documents')->update(['requires_qualified_rename' => true]);
         $issue = $tables->findPending('public.journal_documents');
         expect($issue)->not->toBeNull()
             ->and($issue->affected_uploads)->toBe(1)

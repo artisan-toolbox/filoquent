@@ -32,6 +32,22 @@ it('preserves application configuration overrides', function () {
     expect(config('filoquent.base_path'))->toBe('application-assets');
 });
 
+it('publishes the complete schema as one migration', function (): void {
+    $directory = sys_get_temp_dir().'/filoquent-migrations-'.bin2hex(random_bytes(8));
+    mkdir($directory);
+    app()->useDatabasePath($directory);
+    (new FiloquentServiceProvider(app()))->boot();
+
+    try {
+        expect(Artisan::call('vendor:publish', ['--tag' => 'filoquent-migrations']))->toBe(0);
+        $migrations = File::files($directory.'/migrations');
+        expect($migrations)->toHaveCount(1)
+            ->and($migrations[0]->getFilename())->toBe('2026_11_12_000000_create_filoquent_tables.php');
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
 it('publishes the optional configuration without replacing application settings', function (string $tag) {
     $directory = sys_get_temp_dir().'/filoquent-config-'.bin2hex(random_bytes(8));
     mkdir($directory);

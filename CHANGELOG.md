@@ -74,6 +74,8 @@ Compatibility considerations:
 
 ## Unreleased
 
+- Consolidate the three database migrations into one clean-installation baseline that creates the complete upload ledger, journal namespace, and owner coordination schema directly. Preserve binary owner-route collations, indexes, namespace initialization, and rollback recovery guards. Historical migration-chain upgrades are no longer supported by this development baseline.
+
 ### Added
 
 - Generic `Assets<TKey, TVariants>` annotations, read-only magic variant properties, and passive `isset()` support. Model PHPDoc can declare literal keys for `get()` and nullable object shapes for IDE property completion.

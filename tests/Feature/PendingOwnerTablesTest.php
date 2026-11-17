@@ -260,17 +260,11 @@ it('rejects invalid or protected owner routes before changing coordination', fun
         ->and(DB::table('filoquent_owner_tables')->count())->toBe(0);
 })->with(['', '0', 'bad-name', 'filoquent_uploads', 'filoquent_upload_namespace', 'filoquent_owner_tables', 'migrations', 'main.FILOQUENT_UPLOADS']);
 
-it('backfills existing routes using a database insert select and safely rolls back only unused coordination', function (): void {
+it('registers new owner routes and refuses rollback while coordination is needed', function (): void {
     GcDocument::query()->create(['attachment' => __FILE__]);
-    $migration = require __DIR__.'/../../database/migrations/2026_11_12_000002_create_filoquent_owner_tables.php';
-    $migration->down();
-    DB::connection()->enableQueryLog();
-    $migration->up();
-    $queries = DB::connection()->getQueryLog();
-    DB::connection()->disableQueryLog();
+    $migration = require __DIR__.'/../../database/migrations/2026_11_12_000000_create_filoquent_tables.php';
     expect(DB::table('filoquent_owner_tables')->pluck('owner_table')->all())->toBe([DatabaseFixtures::ownerRoute('gc_documents')])
-        ->and(DB::table('filoquent_owner_tables')->value('state'))->toBe('ready')
-        ->and(DatabaseFixtures::sql(implode(' ', array_column($queries, 'query'))))->toContain('select distinct "owner_table" from "filoquent_uploads"');
+        ->and(DB::table('filoquent_owner_tables')->value('state'))->toBe('ready');
     $tables = new OwnerTables(DB::connection());
     $tables->block('gc_documents');
     expect(fn () => $migration->down())->toThrow(FiloquentException::class)
