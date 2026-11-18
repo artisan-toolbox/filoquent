@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.0-beta.6] - 2026-11-18
+
+### Maintenance
+
+- **Align beta.5 installation and Boost guidance documentation** (`e2798ae`)
+  Updates project documentation for the 1.0.0-beta.6 release cycle (under the “Unreleased” section of CHANGELOG.md and related install guidance) to align with the beta.5 baseline.
+
+Key changes include:
+- Reorders the documented installation/migration steps so the “clean database” requirement is stated before running the migration command, reducing the likelihood of an incorrect migration sequence.
+- Adds/clarifies documentation around “published variant regeneration,” ensuring users know when and how that regeneration step applies.
+
+User impact:
+- No direct code/config/API behavior changes are indicated; the change is limited to documentation guidance and the order of steps.
+
+Compatibility/migration:
+- Existing users are not affected by runtime behavior from this commit; only update your operational runbook/process to follow the clarified step ordering and the documented regeneration requirement.
+
 ## [1.0.0-beta.5] - 2026-11-17
 
 ### Refactoring
