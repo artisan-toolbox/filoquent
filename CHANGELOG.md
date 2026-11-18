@@ -99,6 +99,8 @@ Compatibility considerations:
 
 ## Unreleased
 
+- Align installation and Boost guidance with beta.5. Put the clean database requirement before the migration command and document published variant regeneration.
+
 - Consolidate the three database migrations into one clean-installation baseline that creates the complete upload ledger, journal namespace, and owner coordination schema directly. Preserve binary owner-route collations, indexes, namespace initialization, and rollback recovery guards. Historical migration-chain upgrades are no longer supported by this development baseline.
 
 ### Added

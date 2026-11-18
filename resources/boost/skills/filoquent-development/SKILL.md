@@ -8,18 +8,18 @@ metadata:
 
 # Use Filoquent file attributes
 
-Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. The published beta is `1.0.0-beta.3`, which adds operational status reporting and includes native PHP `File` attributes, persisted-state enums, and the upload middleware generator described below. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
+Inspect `composer show artisan-toolbox/filoquent` and the installed API first. Filoquent requires PHP ^8.5 and Laravel 13. Use the published `1.0.0-beta.5` for the workflows below. It includes a consolidated migration for new installations and the asset regeneration APIs introduced in beta.4. APIs may change before the stable release. Never assume a newer API exists in an older installed package.
 
 ## Install and prepare
 
-Start in an existing Laravel 13 application with a database and writable Laravel filesystem. Run from the application root:
+Start in a Laravel 13 application with a writable filesystem and a database that has never run Filoquent migrations. If the database already has Filoquent tables or recorded migrations, stop before installing this baseline. Review the [installation guide](https://atb.dev.br/docs/filoquent/installation#migration-baseline) before planning an upgrade. Run from the application root:
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-beta.3
+composer require artisan-toolbox/filoquent:1.0.0-beta.5
 php artisan migrate
 ```
 
-The explicit prerelease version does not require changing the application's global `minimum-stability` or adding a custom repository. Laravel discovers `FiloquentServiceProvider`. When discovery is disabled, register it in `bootstrap/providers.php`. No frontend installation is needed. The package schema includes `filoquent_uploads`, `filoquent_upload_namespace`, and `filoquent_owner_tables`. Install it on every participating model connection. The current development branch consolidates these tables into `2026_11_12_000000_create_filoquent_tables.php` for clean installations only. This unpublished baseline does not upgrade historical migration chains. Use a new database when testing that branch. Optional `php artisan vendor:publish --tag=filoquent-migrations` copies the single migration. Its rollback removes all three tables together after the recovery guards pass.
+The explicit prerelease version does not require changing the application's global `minimum-stability` or adding a custom repository. Laravel discovers `FiloquentServiceProvider`. When discovery is disabled, register it in `bootstrap/providers.php`. No frontend installation is needed. The package schema includes `filoquent_uploads`, `filoquent_upload_namespace`, and `filoquent_owner_tables`. Install it on every participating model connection. Beta.5 creates all three tables through `2026_11_12_000000_create_filoquent_tables.php`. Keep the existing migration history and files intact when assessing an older installation. Optional `php artisan vendor:publish --tag=filoquent-migrations` copies the single migration. Its rollback removes all three tables together after the recovery guards pass.
 
 Create a nullable JSON attribute in the application's model migration:
 
@@ -99,11 +99,11 @@ Beta 2 exposes every configuration value through environment variables. When upg
 
 Import `ArtisanToolbox\Filoquent\Enums\FileNaming`. Use `AsFile::using(naming: FileNaming::Original)`, `AsFile::using(name: 'document')`, or `AsFile::using(middleware: DocumentVariants::class)`. Names omit extensions. `FileNaming::Uuid` is the default. The `naming` argument accepts only these enum cases, not raw strings. Invalid serialized cast policies fail when Laravel resolves the cast. Existing asset metadata needs no migration. Content MIME supplies the extension unless trusted middleware overrides it. The model directory is always the SHA1 of its FQN plus `::` plus the attribute name when an upload is created. It cannot be customized. That hash is not used for reading, integrity checks, replacement, or deletion. Every field upload has a separate UUIDv7 directory.
 
-A populated attribute returns immutable `Assets`; null stays null. Use `default()`, `get('thumbnail')`, and `all()`. A missing variant returns null unless a development build explicitly enables middleware fallback as described below. String conversion returns the default URL. Each `Asset` exposes `filesystem`, `path`, `default`, `url()`, `temporaryUrl()`, `exists()`, and `readStream()`. Close returned streams. Private delivery and temporary URL support depend on the disk adapter. Serializing returns the key-to-metadata map without another DB query or filesystem listing.
+A populated attribute returns immutable `Assets`; null stays null. Use `default()`, `get('thumbnail')`, and `all()`. A missing variant returns null unless the middleware explicitly enables middleware fallback as described below. String conversion returns the default URL. Each `Asset` exposes `filesystem`, `path`, `default`, `url()`, `temporaryUrl()`, `exists()`, and `readStream()`. Close returned streams. Private delivery and temporary URL support depend on the disk adapter. Serializing returns the key-to-metadata map without another DB query or filesystem listing.
 
-### Type and regenerate variants in development builds
+### Type and regenerate variants
 
-These APIs are development additions on `1.x`, not part of published `1.0.0-beta.3`. Check the installed implementation before using them. Keep the published installation instructions above for released users.
+Variant generics, regeneration, and attribute-based fallback are available from beta.4.
 
 On the model class, import `Asset` and `Assets` and declare both key hints and nullable magic properties:
 
@@ -217,7 +217,7 @@ php artisan filoquent:resolve-pending --table=documents --rename-to=articles --a
 
 The command performs no DDL. It validates the destination's physical primary key and every active receipt's exact manifest on the corresponding row. It checks bounded pages, then retargets the group atomically without changing paths or files. A mismatch preserves the entire pending group. Use the original name as `--rename-to` to verify a restored table. Previously registered Redis intents remain recognizable after successive renames.
 
-PostgreSQL routes always include the physical schema, including `public`. Copy the exact listed route. For the example in that schema, use `--table=public.documents --rename-to=public.articles --apply`. Later `search_path` changes cannot redirect saved ownership to another tenant. The consolidated development migration does not convert historical receipts. If imported recovery metadata contains an ambiguous owner group, it requires a qualified `--rename-to` destination containing every original manifest; `--removed` is refused until verification succeeds. Mixed-schema groups stay blocked if no single destination proves ownership. Preserve their files and reconcile original records rather than bypassing the block.
+PostgreSQL routes always include the physical schema, including `public`. Copy the exact listed route. For the example in that schema, use `--table=public.documents --rename-to=public.articles --apply`. Later `search_path` changes cannot redirect saved ownership to another tenant. The beta.5 baseline does not convert historical receipts. If imported recovery metadata contains an ambiguous owner group, it requires a qualified `--rename-to` destination containing every original manifest; `--removed` is refused until verification succeeds. Mixed-schema groups stay blocked if no single destination proves ownership. Preserve their files and reconcile original records rather than bypassing the block.
 
 If the table was permanently removed and is still absent, authorize delayed cleanup explicitly:
 
