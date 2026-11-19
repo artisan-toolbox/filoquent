@@ -20,6 +20,18 @@ For package overviews, state purpose, stability, documented version, requirement
 Provide a dedicated Installation guide. Put prerequisites before the steps that use them.
 Keep a package README concise and link to its package page at `https://atb.dev.br` for detailed guidance.
 
+## Maintain package README badges
+
+For a published package, start the badge row in `readmeHead()` with `Badge::releaseVersion()` linked to the package's GitHub Releases page.
+Follow it with a static Packagist badge linked to `https://packagist.org/packages/artisan-toolbox/<package>`.
+Use `Badge::make()` with the image URL `https://img.shields.io/badge/Packagist-F28D1A?style=flat-square&logo=packagist&logoColor=white` and the alt text `Packagist`.
+Before the first release, use an in-development badge.
+Follow the [README badge policy](https://atb.dev.br/docs/project/documentation-policy#readme-badges) for the remaining badges and the header regeneration command.
+
+Keep numeric versions in the badges. Link to the installation guide for compatibility ranges and version constraints.
+Use a package-scoped Composer stability flag such as `@beta` when installation requires allowing a prerelease.
+Verify that changed installation commands resolve in a compatible application and that Maintainer regenerates the expected header.
+
 ## Write and verify
 
 Apply [the writing standard](references/writing.md) to prose and examples.
@@ -32,6 +44,16 @@ For the documentation application, read `documentation/authoring.md` and reuse i
 The workspace `docs` repository is the only documentation source and application. Implement and maintain all documentation there.
 `docs_old` has been retired and no longer exists. Do not require, recreate, or synchronize that checkout.
 Use current Vue content and package behavior for authoring and verification. Historical migration records and fingerprints remain provenance, not a completion gate.
+
+## Reuse documentation UI
+
+For Vue UI in the `docs` application, inspect the installed `@artisan-toolbox/front-awesome` public exports and supported props, events, and slots before choosing components.
+Use its Web Awesome Vue wrappers wherever a component fits the required behavior. Prefer these wrappers over handmade controls, native control replacements, or parallel implementations.
+Import through public package entry points. Never copy package internals into the application.
+
+Compose existing meaningful domain wrappers with these components. Preserve semantic HTML, Inertia navigation, and established keyboard, focus, and accessibility ownership.
+Ordinary layout elements, lists, and links do not need a component replacement merely because a wrapper exists.
+When a required behavior exceeds the public API or a substitution would break these contracts, record the concrete reason in the task or the owning architecture note.
 
 ## Keep changes together
 

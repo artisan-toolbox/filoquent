@@ -30,7 +30,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 
 ## Shared contributor standards
 
-- Use `atb-package-development` for package implementation and `atb-documentation` for public guides, README content, and changelogs. Installed standards are pinned to version 1.0.6.
+- Use `atb-package-development` for package implementation and `atb-documentation` for public guides, README content, and changelogs. The installed standards version is recorded in `.ai/standards.lock.json`.
 - Run `node .ai/sync.mjs --check` before completing a change. Update generated `.ai` and `.agents` files only through the synchronizer documented in `https://atb.dev.br/docs/project/documentation-policy` and the workspace `docs/documentation/agent-standards.md` guide.
 - Keep package consumer guidance in `resources/boost/skills/filoquent-development/SKILL.md`. It must describe implemented public APIs, not the intended future file-handling API.
 
