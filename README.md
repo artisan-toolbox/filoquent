@@ -5,7 +5,8 @@
 </div>
 
 <p id="maintainer-badges" align="center">
-<a href="https://atb.dev.br/packages/filoquent/"><img src="https://img.shields.io/badge/Status-Beta-FF5947?style=flat-square" alt="Beta"></a>
+<a href="https://github.com/artisan-toolbox/filoquent/releases"><img src="https://img.shields.io/badge/version-1.0.0--beta.6-blue?style=flat-square" alt="version"></a>
+<a href="https://packagist.org/packages/artisan-toolbox/filoquent"><img src="https://img.shields.io/badge/Packagist-F28D1A?style=flat-square&amp;logo=packagist&amp;logoColor=white" alt="Packagist"></a>
 <a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/PHP-%5E8.5-777BB4?style=flat-square" alt="PHP"></a>
 <a href="https://atb.dev.br/packages/filoquent/#requirements"><img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square" alt="Laravel"></a>
 <a href="https://github.com/artisan-toolbox/filoquent/actions/workflows/tests.yml?query=branch%3A1.x"><img src="https://img.shields.io/github/actions/workflow/status/artisan-toolbox/filoquent/tests.yml?branch=1.x&amp;label=Tests&amp;style=flat-square" alt="Tests"></a>
@@ -19,10 +20,10 @@
 
 Filoquent connects Laravel filesystems to Eloquent attributes. Assign an uploaded file, local path, or stream, then save the model. Middleware can produce named variants. An indexed ownership ledger coordinates replacement and permanent deletion.
 
-Requires PHP ^8.5 and Laravel 13. Version `1.0.0-beta.5` is the documented beta for new installations. Its consolidated migration does not upgrade older migration histories. APIs may change before the stable release. From your Laravel application's root, install the published version from [Packagist](https://packagist.org/packages/artisan-toolbox/filoquent):
+Filoquent is in beta, and its public API may change before the first stable release. The consolidated migration requires a database that has never run Filoquent migrations. Check the [installation guide](https://atb.dev.br/packages/filoquent/installation/) before upgrading an existing database. For a new installation, run these commands from your Laravel application root.
 
 ```bash
-composer require artisan-toolbox/filoquent:1.0.0-beta.5
+composer require 'artisan-toolbox/filoquent:@beta'
 php artisan migrate
 ```
 

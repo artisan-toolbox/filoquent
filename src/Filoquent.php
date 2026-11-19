@@ -19,10 +19,11 @@ class Filoquent implements Versionable, WithReadmeHead
             ->withLogo(src: 'logo/filoquent-icon.svg', alt: '', width: 88)
             ->withTitle('Filoquent')
             ->withDescription('File attributes for Eloquent with upload variants and indexed storage ownership.')
+            ->addBadge(Badge::releaseVersion('https://github.com/artisan-toolbox/filoquent/releases'))
             ->addBadge(Badge::make(
-                link: 'https://atb.dev.br/packages/filoquent/',
-                imgSrc: 'https://img.shields.io/badge/Status-Beta-FF5947?style=flat-square',
-                imgAlt: 'Beta',
+                link: 'https://packagist.org/packages/artisan-toolbox/filoquent',
+                imgSrc: 'https://img.shields.io/badge/Packagist-F28D1A?style=flat-square&logo=packagist&logoColor=white',
+                imgAlt: 'Packagist',
             ))
             ->addBadge(Badge::make(
                 link: 'https://atb.dev.br/packages/filoquent/#requirements',

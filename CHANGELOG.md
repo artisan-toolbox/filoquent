@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Use a beta stability flag in the README installation command and keep the clean migration prerequisite visible.
+
 ## [1.0.0-beta.6] - 2026-11-18
 
 ### Maintenance
