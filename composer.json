@@ -42,7 +42,7 @@
     "pestphp/pest-plugin-type-coverage": "^5.1",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan-mockery": "^2.0",
-    "phpstan/phpstan": "^2.3.5 <2.3.6",
+    "phpstan/phpstan": "^2.3.6",
     "rector/rector": "^2.8.4"
   },
   "autoload": {
