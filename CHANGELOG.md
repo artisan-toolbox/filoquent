@@ -17,6 +17,10 @@
 
 ## Unreleased
 
+- Test PHP 8.5 and 8.6 in CI with the Maintainer 1.14.4 setup action.
+
+- Use Maintainer 1.14.3 for PHP quality checks. Use four Pest processes on Unix and two in native SQL jobs. Run static analysis and type coverage in the SQLite matrix. Keep Pest serial on Windows.
+
 - Require Pest 5.3.6 or later and let Pest resolve ParaTest for parallel tests.
 - Use the Maintainer 1.14.2 root action for Composer setup in the SQLite, Redis, MySQL, and PostgreSQL jobs.
 - Require Larastan 3.12.1 and Pest Type Coverage 5.1.1 as development minimums. The plugin preserves the PHPStan 2.3.5 minimum and supports the collected-data API in PHPStan 2.3.6 and later.

@@ -23,6 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        php: ['8.5', '8.6']
         stability: [prefer-lowest, prefer-stable]
         include:
           - os: ubuntu-latest
@@ -30,7 +31,7 @@ jobs:
           - os: windows-latest
             runner: windows-2025
 
-    name: SQLite - P8.5 - L13.* - ${{ matrix.stability }} - ${{ matrix.os }}
+    name: SQLite - P${{ matrix.php }} - L13.* - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -39,25 +40,23 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node
-        if: runner.os == 'Linux' && matrix.stability == 'prefer-stable'
+        if: runner.os == 'Linux' && matrix.php == '8.5' && matrix.stability == 'prefer-stable'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           package-manager-cache: false
 
       - name: Check shared agent standards
-        if: runner.os == 'Linux' && matrix.stability == 'prefer-stable'
+        if: runner.os == 'Linux' && matrix.php == '8.5' && matrix.stability == 'prefer-stable'
         run: node .ai/sync.mjs --check
 
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ matrix.php }}
           stability: ${{ matrix.stability }}
 
-      - name: PHPStan
-        run: composer analyse
-
-      - name: Linter
-        run: composer lint:check
+      - name: Check PHP analysis and formatting
+        run: php vendor/bin/maintainer quality:check --no-interaction --strict --tool=phpstan --tool=pint
 
       - name: Rector
         run: composer refactor:check
@@ -67,12 +66,7 @@ jobs:
         run: composer test:types
 
       - name: Test Suite
-        if: runner.os != 'Windows'
-        run: composer test:unit
-
-      - name: Test Suite (Windows)
-        if: runner.os == 'Windows'
-        run: php vendor/bin/pest
+        run: php vendor/bin/maintainer quality:check --no-interaction --strict --tool=pest
 
   redis-journal:
     runs-on: ubuntu-24.04
@@ -80,8 +74,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        php: ['8.5', '8.6']
         stability: [prefer-lowest, prefer-stable]
-    name: SQLite Redis journal - P8.5 - L13 - ${{ matrix.stability }}
+    name: SQLite Redis journal - P${{ matrix.php }} - L13 - ${{ matrix.stability }}
     services:
       redis:
         image: redis:7.4-alpine
@@ -100,6 +95,7 @@ jobs:
 
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ matrix.php }}
           stability: ${{ matrix.stability }}
           extensions: pdo_sqlite, redis
 
@@ -115,8 +111,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        php: ['8.5', '8.6']
         stability: [prefer-lowest, prefer-stable]
-    name: MySQL - P8.5 - L13 - ${{ matrix.stability }}
+    name: MySQL - P${{ matrix.php }} - L13 - ${{ matrix.stability }}
     services:
       mysql:
         image: mysql:8.4
@@ -148,18 +145,14 @@ jobs:
 
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ matrix.php }}
           stability: ${{ matrix.stability }}
           extensions: pdo_sqlite, pdo_mysql, redis
-
-      - name: PHPStan
-        run: composer analyse
-
-      - name: Type Coverage
-        run: composer test:types
 
       - name: Test Suite
         env:
           FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
+          MAINTAINER_PEST_PROCESSES: '2'
           FILOQUENT_TEST_DATABASE_DRIVER: mysql
           FILOQUENT_TEST_MYSQL_HOST: 127.0.0.1
           FILOQUENT_TEST_MYSQL_DATABASE: filoquent_test
@@ -167,7 +160,7 @@ jobs:
           FILOQUENT_TEST_MYSQL_PASSWORD: filoquent_test
           FILOQUENT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
           FILOQUENT_TEST_MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        run: composer test:unit -- --processes=2
+        run: php vendor/bin/maintainer quality:check --no-interaction --strict --tool=pest
 
   pgsql:
     runs-on: ubuntu-24.04
@@ -175,8 +168,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        php: ['8.5', '8.6']
         stability: [prefer-lowest, prefer-stable]
-    name: PostgreSQL - P8.5 - L13 - ${{ matrix.stability }}
+    name: PostgreSQL - P${{ matrix.php }} - L13 - ${{ matrix.stability }}
     services:
       postgres:
         image: postgres:18
@@ -208,18 +202,14 @@ jobs:
 
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ matrix.php }}
           stability: ${{ matrix.stability }}
           extensions: pdo_sqlite, pdo_pgsql, redis
-
-      - name: PHPStan
-        run: composer analyse
-
-      - name: Type Coverage
-        run: composer test:types
 
       - name: Test Suite
         env:
           FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
+          MAINTAINER_PEST_PROCESSES: '2'
           FILOQUENT_TEST_DATABASE_DRIVER: pgsql
           FILOQUENT_TEST_PGSQL_HOST: 127.0.0.1
           FILOQUENT_TEST_PGSQL_DATABASE: filoquent_test
@@ -227,4 +217,4 @@ jobs:
           FILOQUENT_TEST_PGSQL_PASSWORD: filoquent
           FILOQUENT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
           FILOQUENT_TEST_PGSQL_PORT: ${{ job.services.postgres.ports['5432'] }}
-        run: composer test:unit -- --processes=2
+        run: php vendor/bin/maintainer quality:check --no-interaction --strict --tool=pest

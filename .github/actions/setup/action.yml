@@ -1,6 +1,9 @@
 name: Set up Filoquent tests
 description: Install PHP and resolve the selected Composer dependency lane
 inputs:
+  php-version:
+    description: PHP version to install
+    required: true
   stability:
     description: Composer dependency preference
     required: true
@@ -11,8 +14,9 @@ runs:
   using: composite
   steps:
     - name: Set up CI dependencies
-      uses: artisan-toolbox/maintainer@498f5f8723cbed3d24af0ba90870ca26010db4df # 1.14.2
+      uses: artisan-toolbox/maintainer@c46eefa9d82cdfcd53c83c06c810ca2d3b0c7c33 # 1.14.4
       with:
+        php-version: ${{ inputs.php-version }}
         php-extensions: dom, curl, libxml, mbstring, zip, fileinfo, bcmath, intl, ${{ inputs.extensions }}
         composer-mode: ${{ inputs.stability }}
         composer-validation: no-check-lock

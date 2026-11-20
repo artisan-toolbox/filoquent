@@ -94,11 +94,9 @@
       "vendor/bin/pest --parallel"
     ],
     "test": [
-      "@analyse",
-      "@refactor:check",
-      "@lint:check",
-      "@test:types",
-      "@test:unit"
+        "@php vendor/bin/maintainer quality:check --no-interaction --strict --tool=phpstan --tool=pint --tool=pest",
+        "@refactor:check",
+        "@test:types"
     ],
     "clear": [
       "@php vendor/bin/testbench package:purge-skeleton --ansi"
