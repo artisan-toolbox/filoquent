@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0-beta.8] - 2026-11-20
+
+### Continuous Integration
+
+- **Test Filoquent on PHP 8.6 and consolidate quality checks** (`0f80d78`)
+  Add PHP 8.6 alongside PHP 8.5 to the SQLite, SQLite Redis journal, MySQL, and PostgreSQL CI matrices, and show the selected PHP version in each job name. The shared setup action now pins Maintainer 1.14.4 and requires callers to pass `php-version`. Node setup and the AI sync check run only on Linux with PHP 8.5 and `prefer-stable`.
+
+Use Maintainer’s strict `quality:check` command for PHPStan and Pint in SQLite and for Pest in the SQLite, MySQL, and PostgreSQL workflows. Static analysis and type coverage stay in the SQLite matrix rather than running again in MySQL and PostgreSQL. Pest defaults to four processes on Unix, uses two in the MySQL and PostgreSQL jobs, and runs serially on Windows by default. `MAINTAINER_PEST_PARALLEL` can override the platform default, and `MAINTAINER_PEST_PROCESSES` controls the process count.
+
+`composer test` now requires `vendor/bin/maintainer` and runs PHPStan, Pint, and Pest through one strict check before the existing refactoring and type-coverage checks. The default Maintainer pipelines no longer fix or check with Vite Plus, run Vite Plus tests, or run Vue type checks; projects that rely on those steps must configure them explicitly. These changes do not alter Filoquent’s public API or runtime PHP requirements.
+
 ## [1.0.0-beta.7] - 2026-11-20
 
 ### Documentation
