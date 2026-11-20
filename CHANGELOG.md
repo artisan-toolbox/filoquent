@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Require Pest 5.3.6 or later and let Pest resolve ParaTest for parallel tests.
+- Use the Maintainer 1.14.2 root action for Composer setup in the SQLite, Redis, MySQL, and PostgreSQL jobs.
+- Require Larastan 3.12.1 and Pest Type Coverage 5.1.1 as development minimums. The plugin preserves the PHPStan 2.3.5 minimum and supports the collected-data API in PHPStan 2.3.6 and later.
+- Verify all reportable PHP sources in the Pest type-coverage gate and isolate the CI database and Redis ports.
 - Use a beta stability flag in the README installation command and keep the clean migration prerequisite visible.
 
 ## [1.0.0-beta.6] - 2026-11-18

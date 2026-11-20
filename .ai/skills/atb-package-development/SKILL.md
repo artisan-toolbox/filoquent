@@ -30,6 +30,14 @@ Inspect their instructions rather than assuming that every package has identical
 If those skills are unavailable, follow the owning repository's documented commands and conventions.
 Do not install additional tooling just to satisfy an optional reference.
 
+## Check for the same failure across packages
+
+When you find a test, build, or static analysis failure, or a critical runtime defect, identify the cause in the affected package first. Use the failure signature and the code pattern or tooling that caused it to inspect every Artisan Toolbox package, including packages that have yet to install these standards.
+
+Compare resolved tool and dependency versions, relevant code patterns, and CI matrix entries. If another package could be affected, run the smallest check that can reproduce or rule out the failure under the relevant conditions. For example, rerun static analysis with the affected version in the `prefer-lowest` lane even when the stable lane passes.
+
+Fix and verify confirmed occurrences within the task scope. For each package, record the check and its outcome, why the cause does not apply, or what prevented verification. Report any confirmed occurrence outside the task scope as pending.
+
 ## Maintain the adoption path
 
 Use `atb-documentation` for documentation work. It is included in this standards bundle.

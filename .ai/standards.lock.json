@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
-    "version": "1.2.0",
-    "sha256": "fa93a8d2f62f46f3e0ce74a80fb3d65d891a5b427b89e0b27f253757cc223e56",
+    "version": "1.3.0",
+    "sha256": "de7af07e9d5b9b43e4dad6e880f712464862c00f7301eb85e6306bf50eb34747",
     "files": {
         ".ai/skills/atb-documentation/SKILL.md": "050820c8743d745d1632ec39ded124e1ae130fb0e210ef2bb237b67ded3e3475",
         ".agents/skills/atb-documentation/SKILL.md": "050820c8743d745d1632ec39ded124e1ae130fb0e210ef2bb237b67ded3e3475",
@@ -9,9 +9,9 @@
         ".agents/skills/atb-documentation/references/page-patterns.md": "c47e0e9943b9e04e9b85767c066d481646f3f9d8460d2aba333fcdfe32036ba2",
         ".ai/skills/atb-documentation/references/writing.md": "7cf79e3e62ad2a627d69b96811902882bad63f5b4735a41fd6fea7b471770237",
         ".agents/skills/atb-documentation/references/writing.md": "7cf79e3e62ad2a627d69b96811902882bad63f5b4735a41fd6fea7b471770237",
-        ".ai/skills/atb-package-development/SKILL.md": "234011c5799d5753ef05b783d6199b84b42039765c56713130364252ab127666",
-        ".agents/skills/atb-package-development/SKILL.md": "234011c5799d5753ef05b783d6199b84b42039765c56713130364252ab127666",
+        ".ai/skills/atb-package-development/SKILL.md": "fa2794d1e2fd43b54be29323d4ccff170845b723200513e9e2a72f653cd42ace",
+        ".agents/skills/atb-package-development/SKILL.md": "fa2794d1e2fd43b54be29323d4ccff170845b723200513e9e2a72f653cd42ace",
         ".ai/sync.mjs": "f6793baa2ca9339dba573a0b76b660b855c1fc4bcedf21147f94f3397b6595dd",
-        ".ai/manifest.json": "cdbab473eb47bd3d5169a6b286be625a3f2e898e3ea96f0fec378e97249c339b"
+        ".ai/manifest.json": "c1aa1c7df72c9d470de130524a33c818c8385acbe38e8bf79b4fdd64ce5e2b14"
     }
 }

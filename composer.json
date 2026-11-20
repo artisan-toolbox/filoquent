@@ -18,7 +18,7 @@
   ],
   "require": {
     "php": "^8.5",
-    "artisan-toolbox/maintainer": "^1.10.0",
+    "artisan-toolbox/maintainer": "^1.14.3",
     "illuminate/console": "^13.0",
     "illuminate/database": "^13.0",
     "illuminate/filesystem": "^13.0",
@@ -26,23 +26,21 @@
     "illuminate/log": "^13.0",
     "illuminate/support": "^13.0",
     "laravel/prompts": "^0.3.25",
-    "symfony/http-foundation": "^7.4 || ^8.0",
-    "symfony/mime": "^7.4 || ^8.0"
+    "symfony/http-foundation": "^8.0",
+    "symfony/mime": "^8.0"
   },
   "require-dev": {
-    "brianium/paratest": "~7.27.5",
     "driftingly/rector-laravel": "^2.7.3",
-    "larastan/larastan": "^3.9",
+    "larastan/larastan": "^3.12.1",
     "laravel/pao": "^1.0",
     "laravel/pint": "^1.29",
-    "orchestra/testbench": "^10.0||^11.0",
-    "pestphp/pest": "^4.6||^5.0",
-    "pestphp/pest-plugin-laravel": "^4.1||^5.0",
+    "orchestra/testbench": "^11.0",
+    "pestphp/pest": "^5.3.6",
+    "pestphp/pest-plugin-laravel": "^5.0",
     "pestphp/pest-plugin-phpstan": "^5.3",
-    "pestphp/pest-plugin-type-coverage": "^5.1",
+    "pestphp/pest-plugin-type-coverage": "^5.1.1",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan-mockery": "^2.0",
-    "phpstan/phpstan": "^2.3.5 <2.3.6",
     "rector/rector": "^2.8.4"
   },
   "autoload": {
@@ -90,7 +88,7 @@
       "vendor/bin/phpstan analyse --memory-limit=512M"
     ],
     "test:types": [
-      "vendor/bin/pest --type-coverage --min=100 --memory-limit=512M --no-cache"
+      "@php tests/Support/check-type-coverage.php"
     ],
     "test:unit": [
       "vendor/bin/pest --parallel"

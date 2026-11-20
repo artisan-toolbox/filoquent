@@ -1,0 +1,23 @@
+name: Set up Filoquent tests
+description: Install PHP and resolve the selected Composer dependency lane
+inputs:
+  stability:
+    description: Composer dependency preference
+    required: true
+  extensions:
+    description: PHP database and cache extensions for the job
+    default: pdo_sqlite
+runs:
+  using: composite
+  steps:
+    - name: Set up CI dependencies
+      uses: artisan-toolbox/maintainer@498f5f8723cbed3d24af0ba90870ca26010db4df # 1.14.2
+      with:
+        php-extensions: dom, curl, libxml, mbstring, zip, fileinfo, bcmath, intl, ${{ inputs.extensions }}
+        composer-mode: ${{ inputs.stability }}
+        composer-validation: no-check-lock
+        composer-scripts: 'false'
+
+    - name: Discover Testbench packages
+      shell: bash
+      run: composer run prepare

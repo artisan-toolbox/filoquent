@@ -5,57 +5,53 @@ on:
     branches:
       - '*.x'
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'latest' || github.sha }}
   cancel-in-progress: true
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        php: [8.5]
-        laravel: [13.*]
         stability: [prefer-lowest, prefer-stable]
         include:
-          - laravel: 13.*
-            testbench: 11.*
+          - os: ubuntu-latest
+            runner: ubuntu-24.04
+          - os: windows-latest
+            runner: windows-2025
 
-    name: SQLite - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
+    name: SQLite - P8.5 - L13.* - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node
+        if: runner.os == 'Linux' && matrix.stability == 'prefer-stable'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
+          package-manager-cache: false
 
       - name: Check shared agent standards
+        if: runner.os == 'Linux' && matrix.stability == 'prefer-stable'
         run: node .ai/sync.mjs --check
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+      - uses: ./.github/actions/setup
         with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl
-          ini-values: error_reporting=E_ALL
-          tools: composer:v2
-          coverage: none
-
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress --no-scripts
-          composer run prepare
+          stability: ${{ matrix.stability }}
 
       - name: PHPStan
         run: composer analyse
@@ -76,12 +72,13 @@ jobs:
 
       - name: Test Suite (Windows)
         if: runner.os == 'Windows'
-        run: vendor/bin/pest
+        run: php vendor/bin/pest
 
   redis-journal:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         stability: [prefer-lowest, prefer-stable]
     name: SQLite Redis journal - P8.5 - L13 - ${{ matrix.stability }}
@@ -89,48 +86,34 @@ jobs:
       redis:
         image: redis:7.4-alpine
         ports:
-          - 6379:6379
+          - 6379/tcp
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          persist-credentials: false
 
-      - name: Check shared agent standards
-        run: node .ai/sync.mjs --check
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+      - uses: ./.github/actions/setup
         with:
-          php-version: '8.5'
-          extensions: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl, redis
-          ini-values: error_reporting=E_ALL
-          tools: composer:v2
-          coverage: none
-
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress --no-scripts
-          composer run prepare
+          stability: ${{ matrix.stability }}
+          extensions: pdo_sqlite, redis
 
       - name: Test Redis journal integration
-        run: vendor/bin/pest --group=redis
+        env:
+          FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
+          FILOQUENT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: php vendor/bin/pest --group=redis
 
   mysql:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         stability: [prefer-lowest, prefer-stable]
     name: MySQL - P8.5 - L13 - ${{ matrix.stability }}
@@ -138,79 +121,59 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: filoquent_test
           MYSQL_DATABASE: filoquent_test
           MYSQL_ROOT_HOST: '%'
         ports:
-          - 3306:3306
+          - 3306/tcp
         options: >-
-          --health-cmd "mysqladmin ping --silent"
+          --health-cmd "mysqladmin ping --silent --host=127.0.0.1 --protocol=tcp"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
       redis:
         image: redis:7.4-alpine
         ports:
-          - 6379:6379
+          - 6379/tcp
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
-      FILOQUENT_TEST_DATABASE_DRIVER: mysql
-      FILOQUENT_TEST_MYSQL_HOST: 127.0.0.1
-      FILOQUENT_TEST_MYSQL_DATABASE: filoquent_test
-      FILOQUENT_TEST_MYSQL_USERNAME: root
-      FILOQUENT_TEST_MYSQL_PASSWORD: ''
-      FILOQUENT_TEST_MYSQL_PORT: '3306'
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          persist-credentials: false
 
-      - name: Check shared agent standards
-        run: node .ai/sync.mjs --check
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+      - uses: ./.github/actions/setup
         with:
-          php-version: '8.5'
-          extensions: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl, redis, pdo_mysql
-          ini-values: error_reporting=E_ALL
-          tools: composer:v2
-          coverage: none
-
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress --no-scripts
-          composer run prepare
+          stability: ${{ matrix.stability }}
+          extensions: pdo_sqlite, pdo_mysql, redis
 
       - name: PHPStan
         run: composer analyse
-
-      - name: Linter
-        run: composer lint:check
-
-      - name: Rector
-        run: composer refactor:check
 
       - name: Type Coverage
         run: composer test:types
 
       - name: Test Suite
+        env:
+          FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
+          FILOQUENT_TEST_DATABASE_DRIVER: mysql
+          FILOQUENT_TEST_MYSQL_HOST: 127.0.0.1
+          FILOQUENT_TEST_MYSQL_DATABASE: filoquent_test
+          FILOQUENT_TEST_MYSQL_USERNAME: root
+          FILOQUENT_TEST_MYSQL_PASSWORD: filoquent_test
+          FILOQUENT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+          FILOQUENT_TEST_MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
         run: composer test:unit -- --processes=2
 
   pgsql:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         stability: [prefer-lowest, prefer-stable]
     name: PostgreSQL - P8.5 - L13 - ${{ matrix.stability }}
@@ -222,67 +185,46 @@ jobs:
           POSTGRES_PASSWORD: filoquent
           POSTGRES_DB: filoquent_test
         ports:
-          - 5432:5432
+          - 5432/tcp
         options: >-
-          --health-cmd "pg_isready -U filoquent -d filoquent_test"
+          --health-cmd "pg_isready -h 127.0.0.1 -U filoquent -d filoquent_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
       redis:
         image: redis:7.4-alpine
         ports:
-          - 6379:6379
+          - 6379/tcp
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
-      FILOQUENT_TEST_DATABASE_DRIVER: pgsql
-      FILOQUENT_TEST_PGSQL_HOST: 127.0.0.1
-      FILOQUENT_TEST_PGSQL_DATABASE: filoquent_test
-      FILOQUENT_TEST_PGSQL_USERNAME: filoquent
-      FILOQUENT_TEST_PGSQL_PASSWORD: filoquent
-      FILOQUENT_TEST_PGSQL_PORT: '5432'
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          persist-credentials: false
 
-      - name: Check shared agent standards
-        run: node .ai/sync.mjs --check
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+      - uses: ./.github/actions/setup
         with:
-          php-version: '8.5'
-          extensions: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl, redis, pdo_pgsql
-          ini-values: error_reporting=E_ALL
-          tools: composer:v2
-          coverage: none
-
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress --no-scripts
-          composer run prepare
+          stability: ${{ matrix.stability }}
+          extensions: pdo_sqlite, pdo_pgsql, redis
 
       - name: PHPStan
         run: composer analyse
-
-      - name: Linter
-        run: composer lint:check
-
-      - name: Rector
-        run: composer refactor:check
 
       - name: Type Coverage
         run: composer test:types
 
       - name: Test Suite
+        env:
+          FILOQUENT_TEST_REDIS_HOST: 127.0.0.1
+          FILOQUENT_TEST_DATABASE_DRIVER: pgsql
+          FILOQUENT_TEST_PGSQL_HOST: 127.0.0.1
+          FILOQUENT_TEST_PGSQL_DATABASE: filoquent_test
+          FILOQUENT_TEST_PGSQL_USERNAME: filoquent
+          FILOQUENT_TEST_PGSQL_PASSWORD: filoquent
+          FILOQUENT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+          FILOQUENT_TEST_PGSQL_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: composer test:unit -- --processes=2

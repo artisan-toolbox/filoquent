@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "version": "1.2.0",
+    "version": "1.3.0",
     "skills": ["atb-documentation", "atb-package-development"],
-    "sha256": "fa93a8d2f62f46f3e0ce74a80fb3d65d891a5b427b89e0b27f253757cc223e56"
+    "sha256": "de7af07e9d5b9b43e4dad6e880f712464862c00f7301eb85e6306bf50eb34747"
 }
